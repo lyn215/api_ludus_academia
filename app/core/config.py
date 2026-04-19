@@ -3,6 +3,8 @@ app/core/config.py
 Configuración central de LudusAcademia v2.
 """
 from functools import lru_cache
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,8 +24,22 @@ class Settings(BaseSettings):
     MAX_SYNC_PAYLOAD_KB: int = 50
     INVITE_CODE_EXPIRY_HOURS: int = 24
 
-    # CORS — arquitectura SPA directa: puerto 5173 en dev (Vite), dominio real en producción
+    # CORS — acepta JSON array o cadena separada por comas
+    # Ejemplos válidos:
+    #   ALLOWED_ORIGINS=http://localhost:5173,https://mi-app.onrender.com
+    #   ALLOWED_ORIGINS=["http://localhost:5173","https://mi-app.onrender.com"]
     ALLOWED_ORIGINS: list[str] = ["http://localhost:5173"]
+
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_origins(cls, v: object) -> list[str]:
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("["):
+                import json
+                return json.loads(v)
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
 
     @property
     def DATABASE_URL(self) -> str:
