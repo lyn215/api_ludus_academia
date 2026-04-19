@@ -34,7 +34,7 @@ async def health(db: AsyncSession = Depends(get_db)) -> HealthResponse:
 
 @router.get("/debug/jwt", summary="Diagnóstico JWT — eliminar en producción")
 async def debug_jwt(request: Request) -> dict:
-    """Decodifica la cabecera del token y prueba la verificación. No expone el secreto."""
+    """Decodifica la cabecera del token y prueba el fetch de JWKS con apikey."""
     auth = request.headers.get("Authorization", "")
     token = auth.removeprefix("Bearer ").strip() if auth.startswith("Bearer ") else None
 
@@ -51,11 +51,15 @@ async def debug_jwt(request: Request) -> dict:
     jwks_result: dict = {}
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(jwks_url)
+            resp = await client.get(
+                jwks_url,
+                headers={"apikey": settings.SUPABASE_ANON_KEY},
+            )
             jwks_result = {
                 "status": resp.status_code,
+                "anon_key_set": bool(settings.SUPABASE_ANON_KEY),
                 "keys_count": len(resp.json().get("keys", [])) if resp.is_success else 0,
-                "raw": resp.text[:500],
+                "raw": resp.text[:300],
             }
     except Exception as exc:
         jwks_result = {"error": str(exc)}
@@ -63,6 +67,7 @@ async def debug_jwt(request: Request) -> dict:
     return {
         "supabase_url_configured": bool(settings.SUPABASE_URL),
         "jwt_secret_configured": bool(settings.SUPABASE_JWT_SECRET),
+        "anon_key_configured": bool(settings.SUPABASE_ANON_KEY),
         "token_present": bool(token),
         "token_header": token_header,
         "jwks_url": jwks_url,
