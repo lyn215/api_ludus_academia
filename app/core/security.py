@@ -3,8 +3,7 @@ app/core/security.py
 Valida JWTs de Supabase Auth.
 
 Soporta ES256 (P-256), RS256 y HS256 legacy.
-JWKS obtenido de {SUPABASE_URL}/auth/v1/keys con apikey header.
-Se usa PyJWT + ECAlgorithm/RSAAlgorithm para construir las claves.
+JWKS: {SUPABASE_URL}/auth/v1/.well-known/jwks.json
 """
 from __future__ import annotations
 
@@ -25,24 +24,23 @@ bearer_scheme = HTTPBearer()
 
 _jwks_cache: list[dict] | None = None
 _jwks_fetched_at: float = 0.0
-_JWKS_TTL = 3600.0  # refrescar cada hora
+_JWKS_TTL = 3600.0
 
 
 async def _fetch_jwks() -> list[dict]:
     global _jwks_cache, _jwks_fetched_at
     now = time.monotonic()
-    # Solo usa caché si tiene datos y no expiró
     if _jwks_cache and (now - _jwks_fetched_at) < _JWKS_TTL:
         return _jwks_cache
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(
-                f"{settings.SUPABASE_URL}/auth/v1/keys",
+                f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json",
                 headers={"apikey": settings.SUPABASE_ANON_KEY},
             )
             resp.raise_for_status()
             keys = resp.json().get("keys", [])
-            if keys:  # no cachear si llegó vacío
+            if keys:
                 _jwks_cache = keys
                 _jwks_fetched_at = now
     except Exception:
@@ -75,7 +73,6 @@ async def _decode_jwks(token: str) -> dict[str, Any] | None:
         return None
 
     for jwk_data in keys:
-        # Saltar claves que no coincidan por kid
         if kid and jwk_data.get("kid") != kid:
             continue
         try:

@@ -34,7 +34,6 @@ async def health(db: AsyncSession = Depends(get_db)) -> HealthResponse:
 
 @router.get("/debug/jwt", summary="Diagnóstico JWT — eliminar en producción")
 async def debug_jwt(request: Request) -> dict:
-    """Decodifica la cabecera del token y prueba el fetch de JWKS con apikey."""
     auth = request.headers.get("Authorization", "")
     token = auth.removeprefix("Bearer ").strip() if auth.startswith("Bearer ") else None
 
@@ -47,7 +46,7 @@ async def debug_jwt(request: Request) -> dict:
         except Exception as exc:
             token_header = {"error": str(exc)}
 
-    jwks_url = f"{settings.SUPABASE_URL}/auth/v1/keys"
+    jwks_url = f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json"
     jwks_result: dict = {}
     try:
         async with httpx.AsyncClient(timeout=10) as client:
