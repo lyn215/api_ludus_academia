@@ -22,8 +22,8 @@ class Settings(BaseSettings):
     MAX_SYNC_PAYLOAD_KB: int = 50
     INVITE_CODE_EXPIRY_HOURS: int = 24
 
-    # CORS
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
+    # CORS — arquitectura SPA directa: puerto 5173 en dev (Vite), dominio real en producción
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:5173"]
 
     @property
     def DATABASE_URL(self) -> str:
