@@ -1,18 +1,11 @@
-"""
-app/schemas/schemas.py
-Modelos Pydantic v2.
-
-Cambios respecto a la versión anterior:
-  - CrearGrupoRequest / GrupoResponse: para el nuevo endpoint POST /docentes/grupos
-  - MiPerfilResponse: devuelve perfil del docente + sus grupos al hacer login
-  - ListaGruposResponse: listado de grupos del docente autenticado
-"""
+"""app/schemas/schemas.py"""
 from datetime import datetime
 from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 
-# ── Vinculación de dispositivo ────────────────────────────────────────────────
+# ── Vinculación de dispositivo ─────────────────────────────────────────────
 
 class VincularRequest(BaseModel):
     uuid_estudiante: str = Field(..., description="UUID generado por la app en el primer inicio")
@@ -29,7 +22,7 @@ class VincularResponse(BaseModel):
     id_grupo: int
 
 
-# ── Sincronización de progreso ────────────────────────────────────────────────
+# ── Sincronización de progreso ──────────────────────────────────────────
 
 class EventoAprendizajeIn(BaseModel):
     id_evento: str = Field(..., description="UUID del móvil — garantiza idempotencia")
@@ -51,44 +44,29 @@ class SincronizarResponse(BaseModel):
     duplicados_ignorados: int
 
 
-# ── Grupos ────────────────────────────────────────────────────────────────────
+# ── Grupos ─────────────────────────────────────────────────────────────────────
 
 class CrearGrupoRequest(BaseModel):
-    nombre_grupo: str = Field(
-        ..., min_length=1, max_length=100,
-        description="Ej: '3° A', 'Matemáticas 2do B'"
-    )
-    nombre_escuela: str = Field(
-        "Escuela 5 de Mayo de 1862",
-        max_length=200,
-    )
+    nombre_grupo: str = Field(..., min_length=1, max_length=100)
+    nombre_escuela: str = Field("Escuela 5 de Mayo de 1862", max_length=200)
 
 
-class GrupoResponse(BaseModel):
-    id: int
+class GrupoInfo(BaseModel):
+    """Contrato público de grupo: nombres de campo alineados con el frontend."""
+    id_grupo: int
     nombre_grupo: str
     nombre_escuela: str
-    total_estudiantes: int = 0
+    total_alumnos: int = 0
 
 
-class ListaGruposResponse(BaseModel):
-    grupos: list[GrupoResponse]
-    total: int
-
-
-# ── Perfil del docente ────────────────────────────────────────────────────────
+# ── Perfil del docente ──────────────────────────────────────────────────
 
 class MiPerfilResponse(BaseModel):
-    """
-    Devuelve el perfil del docente autenticado.
-    Usado por el dashboard para saber si el docente ya tiene grupos
-    y decidir si mostrar el onboarding de 'Crea tu primer grupo'.
-    """
     id: int
     correo: str
     nombre_completo: str | None
     fecha_registro: datetime
-    grupos: list[GrupoResponse]
+    grupos: list[GrupoInfo]
     tiene_grupos: bool
 
 
@@ -104,14 +82,15 @@ class GenerarCodigoResponse(BaseModel):
     expira_el: datetime
 
 
-# ── Analítica de grupo ────────────────────────────────────────────────────────
+# ── Analítica de grupo ──────────────────────────────────────────────────────
 
 class MetricaAlumno(BaseModel):
     alias_alumno: str
+    uuid_estudiante: str | None = None
     misiones_completas: int
     promedio_errores: float
     monedas_totales: int
-    ultima_actividad: datetime | None
+    ultima_actividad: datetime
 
 
 class AnaliticaGrupoResponse(BaseModel):
@@ -122,7 +101,7 @@ class AnaliticaGrupoResponse(BaseModel):
     generado_el: datetime
 
 
-# ── Health ────────────────────────────────────────────────────────────────────
+# ── Health ──────────────────────────────────────────────────────────────────────────
 
 class HealthResponse(BaseModel):
     estado: Literal["ok", "degradado"]
