@@ -49,15 +49,21 @@ async def _fetch_jwks() -> list[dict]:
 
 
 def _decode_hs256(token: str) -> dict[str, Any] | None:
+    """Decodifica tokens legacy HS256. Rechaza claves de servicio (anon/service_role) que no tienen sub."""
     if not settings.SUPABASE_JWT_SECRET:
         return None
     try:
-        return jwt.decode(
+        payload = jwt.decode(
             token,
             settings.SUPABASE_JWT_SECRET,
             algorithms=["HS256"],
             options={"verify_aud": False},
         )
+        # Las claves anon/service_role de Supabase son JWTs HS256 sin campo sub.
+        # Rechazarlas aquí evita que lleguen a get_supabase_uid con sub=None.
+        if not payload.get("sub"):
+            return None
+        return payload
     except InvalidTokenError:
         return None
 
@@ -113,7 +119,8 @@ async def get_supabase_uid(payload: dict = Depends(verify_supabase_token)) -> st
     if not uid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token sin identificador de usuario (sub).",
+            detail="Sesión de Supabase inválida o expirada.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     return uid
 
