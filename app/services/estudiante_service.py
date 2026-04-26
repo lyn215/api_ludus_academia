@@ -78,8 +78,8 @@ class EstudianteService:
     ) -> SincronizarResponse:
         """
         Volcado de eventos offline.
-        Idempotencia: id_evento es PK en SQLite — duplicados rechazados
-        automáticamente con IntegrityError, contados como ignorados.
+        Idempotencia garantizada con savepoints (begin_nested): un evento
+        duplicado solo revierte su propio insert, nunca el lote completo.
         """
         estudiante = await db.get(Estudiante, payload.uuid_estudiante)
         if not estudiante:
@@ -103,13 +103,12 @@ class EstudianteService:
                 monedas_ganadas=evento.monedas_ganadas,
                 fecha_dispositivo=evento.fecha_dispositivo,
             )
-            db.add(nuevo)
             try:
-                await db.flush()
+                async with db.begin_nested():  # savepoint — solo revierte este evento
+                    db.add(nuevo)
                 procesados += 1
                 monedas_nuevas += evento.monedas_ganadas
             except IntegrityError:
-                await db.rollback()
                 duplicados += 1
 
         if monedas_nuevas > 0:

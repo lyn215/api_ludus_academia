@@ -1,11 +1,6 @@
 """
 app/schemas/schemas.py
 Modelos Pydantic v2.
-
-Cambios respecto a la versión anterior:
-  - CrearGrupoRequest / GrupoResponse: para el nuevo endpoint POST /docentes/grupos
-  - MiPerfilResponse: devuelve perfil del docente + sus grupos al hacer login
-  - ListaGruposResponse: listado de grupos del docente autenticado
 """
 from datetime import datetime
 from typing import Literal
@@ -79,11 +74,6 @@ class ListaGruposResponse(BaseModel):
 # ── Perfil del docente ────────────────────────────────────────────────────────
 
 class MiPerfilResponse(BaseModel):
-    """
-    Devuelve el perfil del docente autenticado.
-    Usado por el dashboard para saber si el docente ya tiene grupos
-    y decidir si mostrar el onboarding de 'Crea tu primer grupo'.
-    """
     id: int
     correo: str
     nombre_completo: str | None
@@ -108,6 +98,7 @@ class GenerarCodigoResponse(BaseModel):
 
 class MetricaAlumno(BaseModel):
     alias_alumno: str
+    uuid_estudiante: str
     misiones_completas: int
     promedio_errores: float
     monedas_totales: int
