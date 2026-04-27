@@ -36,7 +36,6 @@ class DocenteService:
             select(Docente).where(Docente.supabase_uid == supabase_uid)
         )
         docente = result.scalar_one_or_none()
-
         if not docente:
             docente = Docente(
                 supabase_uid=supabase_uid,
@@ -44,7 +43,6 @@ class DocenteService:
             )
             db.add(docente)
             await db.flush()
-
         return docente
 
     # ── Perfil y grupos ─────────────────────────────────────────────────────
@@ -91,6 +89,30 @@ class DocenteService:
             total_alumnos=0,
         )
 
+    # ── Alias del alumno ─────────────────────────────────────────────────────
+
+    async def actualizar_alias(
+        self,
+        db: AsyncSession,
+        supabase_uid: str,
+        correo: str,
+        uuid_estudiante: str,
+        alias: str,
+    ) -> dict:
+        docente = await self.obtener_o_crear_docente(db, supabase_uid, correo)
+        estudiante = await db.get(Estudiante, uuid_estudiante)
+        if not estudiante:
+            from fastapi import HTTPException, status
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="Alumno no encontrado o sin permisos.")
+        grupo = await db.get(Grupo, estudiante.id_grupo)
+        if not grupo or grupo.id_docente != docente.id:
+            from fastapi import HTTPException, status
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="Alumno no encontrado o sin permisos.")
+        estudiante.alias_estudiante = alias.strip()
+        return {"uuid": uuid_estudiante, "alias": estudiante.alias_estudiante}
+
     # ── Códigos de vinculación ────────────────────────────────────────────────
 
     async def generar_codigo(
@@ -104,10 +126,8 @@ class DocenteService:
         grupo = await db.get(Grupo, payload.id_grupo)
         if not grupo or grupo.id_docente != docente.id:
             from fastapi import HTTPException, status
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tienes permisos para generar códigos en este grupo.",
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="No tienes permisos para generar códigos en este grupo.")
         expira = datetime.now(timezone.utc) + timedelta(hours=payload.horas_validez)
         for _ in range(10):
             codigo_str = generar_codigo_ludu()
@@ -135,15 +155,12 @@ class DocenteService:
         grupo = await db.get(Grupo, id_grupo)
         if not grupo or grupo.id_docente != docente.id:
             from fastapi import HTTPException, status
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tienes permisos para consultar este grupo.",
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="No tienes permisos para consultar este grupo.")
         result = await db.execute(
             select(Estudiante).where(Estudiante.id_grupo == id_grupo)
         )
         alumnos = result.scalars().all()
-
         metricas = []
         for alumno in alumnos:
             stats = await db.execute(
@@ -162,12 +179,10 @@ class DocenteService:
                 monedas_totales=alumno.monedas_totales,
                 ultima_actividad=row.ultima_actividad or _FALLBACK_DT,
             ))
-
         if metrica == "errores":
             metricas.sort(key=lambda m: m.promedio_errores, reverse=True)
         elif metrica == "progreso":
             metricas.sort(key=lambda m: m.misiones_completas, reverse=True)
-
         return AnaliticaGrupoResponse(
             id_grupo=id_grupo,
             nombre_grupo=grupo.nombre_grupo,

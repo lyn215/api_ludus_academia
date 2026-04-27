@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, field_validator
 class VincularRequest(BaseModel):
     uuid_estudiante: str = Field(..., description="UUID generado por la app en el primer inicio")
     codigo_vinculacion: str = Field(..., min_length=6, max_length=6)
+    nombre_alumno: str | None = None
 
     @field_validator("codigo_vinculacion")
     @classmethod
@@ -52,7 +53,6 @@ class CrearGrupoRequest(BaseModel):
 
 
 class GrupoInfo(BaseModel):
-    """Contrato público de grupo: nombres de campo alineados con el frontend."""
     id_grupo: int
     nombre_grupo: str
     nombre_escuela: str
@@ -68,6 +68,12 @@ class MiPerfilResponse(BaseModel):
     fecha_registro: datetime
     grupos: list[GrupoInfo]
     tiene_grupos: bool
+
+
+# ── Alias del alumno ───────────────────────────────────────────────────────
+
+class ActualizarAliasRequest(BaseModel):
+    alias: str = Field(..., min_length=1, max_length=50)
 
 
 # ── Generación de código de vinculación ───────────────────────────────────────

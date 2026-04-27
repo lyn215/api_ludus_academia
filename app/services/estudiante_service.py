@@ -48,7 +48,9 @@ class EstudianteService:
 
         if estudiante is not None:
             if estudiante.id_grupo == codigo.id_grupo:
-                # Re-vinculación del mismo alumno (reinstaló la app)
+                # Re-vinculación: actualizar alias si viene en el request
+                if payload.nombre_alumno and payload.nombre_alumno.strip():
+                    estudiante.alias_estudiante = payload.nombre_alumno.strip()[:50]
                 return VincularResponse(
                     mensaje="Dispositivo vinculado con éxito.",
                     id_grupo=codigo.id_grupo,
@@ -59,11 +61,15 @@ class EstudianteService:
                 detail="Este dispositivo ya está vinculado a otro grupo.",
             )
 
-        total = await db.scalar(
-            select(func.count(Estudiante.uuid_estudiante))
-            .where(Estudiante.id_grupo == codigo.id_grupo)
-        )
-        alias = f"Alumno {(total or 0) + 1}"
+        if payload.nombre_alumno and payload.nombre_alumno.strip():
+            alias = payload.nombre_alumno.strip()[:50]
+        else:
+            total = await db.scalar(
+                select(func.count(Estudiante.uuid_estudiante))
+                .where(Estudiante.id_grupo == codigo.id_grupo)
+            )
+            alias = f"Alumno {(total or 0) + 1}"
+
         db.add(Estudiante(
             uuid_estudiante=payload.uuid_estudiante,
             id_grupo=codigo.id_grupo,

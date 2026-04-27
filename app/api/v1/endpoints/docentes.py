@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import get_supabase_uid, get_token_email, verify_supabase_token
 from app.db.session import get_db
 from app.schemas.schemas import (
+    ActualizarAliasRequest,
     AnaliticaGrupoResponse,
     CrearGrupoRequest,
     GenerarCodigoRequest,
@@ -59,6 +60,23 @@ async def crear_grupo(
     correo: Annotated[str, Depends(get_token_email)],
 ) -> GrupoInfo:
     return await service.crear_grupo(db, supabase_uid, correo, payload)
+
+
+@router.patch(
+    "/alumnos/{uuid_estudiante}/alias",
+    summary="Actualizar alias del alumno",
+    description="Permite al docente corregir el nombre visible de un alumno.",
+)
+async def actualizar_alias(
+    uuid_estudiante: str,
+    payload: ActualizarAliasRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    supabase_uid: Annotated[str, Depends(get_supabase_uid)],
+    correo: Annotated[str, Depends(get_token_email)],
+) -> dict:
+    return await service.actualizar_alias(
+        db, supabase_uid, correo, uuid_estudiante, payload.alias
+    )
 
 
 @router.post(
