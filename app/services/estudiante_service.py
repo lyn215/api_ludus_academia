@@ -1,9 +1,6 @@
-"""
-app/services/estudiante_service.py
-Lógica de negocio para alumnos: vinculación y sincronización.
-"""
+"""app/services/estudiante_service.py"""
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -26,10 +23,6 @@ class EstudianteService:
     async def vincular(
         self, db: AsyncSession, payload: VincularRequest
     ) -> VincularResponse:
-        """
-        Vincula UUID del dispositivo con un grupo vía código LUDUXX.
-        Valida: código existe + no expiró + no fue usado.
-        """
         ahora = datetime.now(timezone.utc)
         codigo = await db.get(CodigoVinculacion, payload.codigo_vinculacion)
 
@@ -44,29 +37,38 @@ class EstudianteService:
         if expira.tzinfo is None:
             expira = expira.replace(tzinfo=timezone.utc)
 
-        if codigo.esta_usado or expira < ahora:
+        if expira < ahora:
             from fastapi import HTTPException, status
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Código de vinculación inválido o expirado.",
             )
 
-        # Crear perfil si es primera vez
         estudiante = await db.get(Estudiante, payload.uuid_estudiante)
-        if not estudiante:
-            total = await db.scalar(
-                select(func.count(Estudiante.uuid_estudiante))
-                .where(Estudiante.id_grupo == codigo.id_grupo)
-            )
-            alias = f"Alumno {(total or 0) + 1}"
-            estudiante = Estudiante(
-                uuid_estudiante=payload.uuid_estudiante,
-                id_grupo=codigo.id_grupo,
-                alias_estudiante=alias,
-            )
-            db.add(estudiante)
 
-        codigo.esta_usado = True
+        if estudiante is not None:
+            if estudiante.id_grupo == codigo.id_grupo:
+                # Re-vinculación del mismo alumno (reinstaló la app)
+                return VincularResponse(
+                    mensaje="Dispositivo vinculado con éxito.",
+                    id_grupo=codigo.id_grupo,
+                )
+            from fastapi import HTTPException, status
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Este dispositivo ya está vinculado a otro grupo.",
+            )
+
+        total = await db.scalar(
+            select(func.count(Estudiante.uuid_estudiante))
+            .where(Estudiante.id_grupo == codigo.id_grupo)
+        )
+        alias = f"Alumno {(total or 0) + 1}"
+        db.add(Estudiante(
+            uuid_estudiante=payload.uuid_estudiante,
+            id_grupo=codigo.id_grupo,
+            alias_estudiante=alias,
+        ))
 
         return VincularResponse(
             mensaje="Dispositivo vinculado con éxito.",
@@ -76,11 +78,6 @@ class EstudianteService:
     async def sincronizar(
         self, db: AsyncSession, payload: SincronizarRequest
     ) -> SincronizarResponse:
-        """
-        Volcado de eventos offline.
-        Idempotencia: id_evento es PK en SQLite — duplicados rechazados
-        automáticamente con IntegrityError, contados como ignorados.
-        """
         estudiante = await db.get(Estudiante, payload.uuid_estudiante)
         if not estudiante:
             from fastapi import HTTPException, status
@@ -123,10 +120,6 @@ class EstudianteService:
 
 
 def generar_codigo_ludu() -> str:
-    """
-    Código de 6 chars con prefijo LUDU.
-    Excluye O, 0, I, 1 para evitar confusión al dictarlo.
-    """
     chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     sufijo = "".join(random.choices(chars, k=2))
     return f"LUDU{sufijo}"
