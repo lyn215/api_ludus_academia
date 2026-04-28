@@ -21,11 +21,18 @@ settings = get_settings()
 
 _FALLBACK_DT = datetime(2000, 1, 1, tzinfo=timezone.utc)
 
-# Misiones reales: id_mision empieza con "nivel_" o "L" seguido de dígito
 _MISION_REAL = or_(
     EventoAprendizaje.id_mision.like("nivel_%"),
     EventoAprendizaje.id_mision.like("L%"),
 )
+
+
+def _id_a_nivel(id_mision: str) -> str:
+    if id_mision.startswith("nivel_"):
+        return id_mision[:7]
+    if len(id_mision) >= 2 and id_mision[0] == "L" and id_mision[1].isdigit():
+        return f"nivel_{id_mision[1]}"
+    return "otro"
 
 
 class DocenteService:
@@ -173,7 +180,7 @@ class DocenteService:
         for alumno in alumnos:
             uid = alumno.uuid_estudiante
 
-            # Misiones reales: nivel_* o L* — cuentan misiones y errores
+            # Misiones reales: count + promedio errores
             stats = await db.execute(
                 select(
                     func.count(EventoAprendizaje.id_evento).label("total_misiones"),
@@ -185,11 +192,34 @@ class DocenteService:
             )
             row = stats.one()
 
-            # Última actividad: todos los eventos (incluye técnicos)
+            # Última actividad: todos los eventos
             ultima_actividad = await db.scalar(
                 select(func.max(EventoAprendizaje.fecha_dispositivo))
                 .where(EventoAprendizaje.uuid_estudiante == uid)
             )
+
+            # Desglose de errores por nivel temático
+            desglose = await db.execute(
+                select(
+                    EventoAprendizaje.id_mision,
+                    func.coalesce(func.avg(EventoAprendizaje.errores), 0.0).label("prom"),
+                )
+                .where(
+                    EventoAprendizaje.uuid_estudiante == uid,
+                    _MISION_REAL,
+                )
+                .group_by(EventoAprendizaje.id_mision)
+            )
+            acum: dict[str, list[float]] = {}
+            for fila in desglose.all():
+                nivel = _id_a_nivel(fila.id_mision)
+                if nivel == "otro":
+                    continue
+                acum.setdefault(nivel, []).append(float(fila.prom))
+            errores_por_nivel = {
+                nivel: round(sum(vals) / len(vals), 2)
+                for nivel, vals in acum.items()
+            }
 
             metricas.append(MetricaAlumno(
                 alias_alumno=alumno.alias_estudiante or uid[:8],
@@ -198,6 +228,7 @@ class DocenteService:
                 promedio_errores=round(float(row.prom_errores), 2),
                 monedas_totales=alumno.monedas_totales,
                 ultima_actividad=ultima_actividad or _FALLBACK_DT,
+                errores_por_nivel=errores_por_nivel,
             ))
 
         if metrica == "errores":

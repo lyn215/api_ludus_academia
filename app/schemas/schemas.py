@@ -92,11 +92,12 @@ class GenerarCodigoResponse(BaseModel):
 
 class MetricaAlumno(BaseModel):
     alias_alumno: str
-    uuid_estudiante: str | None = None
+    uuid_estudiante: str
     misiones_completas: int
     promedio_errores: float
     monedas_totales: int
     ultima_actividad: datetime
+    errores_por_nivel: dict[str, float] = {}
 
 
 class AnaliticaGrupoResponse(BaseModel):
