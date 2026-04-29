@@ -215,7 +215,7 @@ class ReporteService:
 
         resumen_table = Table(
             [
-                ["Misiones completadas", f"{misiones} de 45"],
+                ["Misiones completadas", f"{misiones} de 6"],
                 ["Promedio general errores", f"{prom_errores:.2f}"],
                 ["Monedas recolectadas", str(estudiante.monedas_totales)],
                 ["Nivel de avance", _nivel_avance(misiones)],
