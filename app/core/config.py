@@ -25,29 +25,33 @@ class Settings(BaseSettings):
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
-    def ensure_statement_cache_size(cls, v: str) -> str:
+    def ensure_supabase_pooler_config(cls, v: str) -> str:
         """
-        Asegura que statement_cache_size=0 esté en la URL para pgbouncer.
-        Si no está presente, lo agrega automáticamente.
+        Asegura configuración correcta para Supabase pooler (pgbouncer).
+        - Puerto 6543 para pooler
+        - statement_cache_size=0 para evitar prepared statements
+        - sslmode=require para conexiones seguras
         """
-        if not v or "statement_cache_size" in v:
-            return v
+        if not v or "pooler.supabase.com" not in v:
+            # Si no es pooler, convertir a pooler
+            if "supabase.com" in v and "pooler" not in v:
+                v = v.replace("supabase.com", "pooler.supabase.com")
+                # Cambiar puerto a 6543 si no lo es
+                if ":5432/" in v:
+                    v = v.replace(":5432/", ":6543/")
         
-        # Parsear la URL
-        parsed = urlparse(v)
+        # Asegurar parámetros de pgbouncer
+        if "?" in v:
+            # Ya tiene query params, agregar si no existen
+            if "statement_cache_size" not in v:
+                v += "&statement_cache_size=0"
+            if "sslmode" not in v:
+                v += "&sslmode=require"
+        else:
+            # No tiene query params, agregar
+            v += "?statement_cache_size=0&sslmode=require"
         
-        # Parsear query parameters existentes
-        query_params = parse_qs(parsed.query, keep_blank_values=True)
-        
-        # Agregar statement_cache_size=0
-        query_params["statement_cache_size"] = ["0"]
-        
-        # Reconstruir query string (sin usar '+' para espacios)
-        new_query = urlencode(query_params, doseq=True)
-        
-        # Reconstruir URL
-        new_parsed = parsed._replace(query=new_query)
-        return urlunparse(new_parsed)
+        return v
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
