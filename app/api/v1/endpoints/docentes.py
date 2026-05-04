@@ -96,7 +96,7 @@ async def generar_codigo(
     summary="Analítica del grupo",
 )
 async def analitica_grupo(
-    id_grupo: int,
+    id_grupo: str,
     db=Depends(get_supabase),
     supabase_uid: Annotated[str, Depends(get_supabase_uid)] = None,
     correo: Annotated[str, Depends(get_token_email)] = None,
@@ -125,7 +125,7 @@ async def reporte_pdf(
         raise HTTPException(status_code=404, detail="Alumno no encontrado.")
     estudiante = rows[0]
     grupos = await db.query("grupos", filters={"id": estudiante["id_grupo"]})
-    if not grupos or grupos[0]["id_docente"] != docente["id"]:
+    if not grupos or grupos[0]["docente_id"] != docente["id"]:
         raise HTTPException(status_code=403, detail="No tienes acceso a este alumno.")
     pdf_bytes = await ReporteService().generar_pdf(db, estudiante, grupos[0]["nombre_grupo"])
     alias = estudiante.get("alias_estudiante") or uuid_estudiante[:8]

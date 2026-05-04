@@ -20,7 +20,7 @@ class VincularRequest(BaseModel):
 
 class VincularResponse(BaseModel):
     mensaje: str
-    id_grupo: int
+    id_grupo: str
 
 
 # ── Sincronización de progreso ──────────────────────────────────────────
@@ -53,16 +53,16 @@ class CrearGrupoRequest(BaseModel):
 
 
 class GrupoInfo(BaseModel):
-    id_grupo: int
+    id_grupo: str
     nombre_grupo: str
-    nombre_escuela: str
+    nombre_escuela: str | None = None
     total_alumnos: int = 0
 
 
 # ── Perfil del docente ──────────────────────────────────────────────────
 
 class MiPerfilResponse(BaseModel):
-    id: int
+    id: str
     correo: str
     nombre_completo: str | None
     fecha_registro: datetime
@@ -79,7 +79,7 @@ class ActualizarAliasRequest(BaseModel):
 # ── Generación de código de vinculación ───────────────────────────────────────
 
 class GenerarCodigoRequest(BaseModel):
-    id_grupo: int
+    id_grupo: str
     horas_validez: int = Field(24, ge=1, le=168)
 
 
@@ -101,7 +101,7 @@ class MetricaAlumno(BaseModel):
 
 
 class AnaliticaGrupoResponse(BaseModel):
-    id_grupo: int
+    id_grupo: str
     nombre_grupo: str
     total_alumnos: int
     metricas: list[MetricaAlumno]

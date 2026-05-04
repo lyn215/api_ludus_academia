@@ -37,13 +37,19 @@ class DocenteService:
     # ── Auto-provisioning ──────────────────────────────────────────────────
 
     async def obtener_o_crear_docente(self, db, supabase_uid: str, correo: str = "") -> dict:
-        rows = await db.query("docentes", filters={"supabase_uid": supabase_uid})
+        # El JWT sub coincide con usuarios.id en el patrón estándar de Supabase Auth
+        rows = await db.query("usuarios", filters={"id": supabase_uid})
         if rows:
             return rows[0]
-        return await db.insert("docentes", {
-            "supabase_uid": supabase_uid,
-            "correo": correo or f"{supabase_uid[:8]}@supabase.local",
-        })
+        # Fallback: buscar por email
+        if correo:
+            rows = await db.query("usuarios", filters={"email": correo})
+            if rows:
+                return rows[0]
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Usuario no registrado. Completa el registro antes de usar el dashboard.",
+        )
 
     # ── Perfil y grupos ─────────────────────────────────────────────────────
 
@@ -52,9 +58,9 @@ class DocenteService:
         grupos = await self._grupos_con_conteo(db, docente["id"])
         return MiPerfilResponse(
             id=docente["id"],
-            correo=docente["correo"],
+            correo=docente.get("email", correo),
             nombre_completo=docente.get("nombre_completo"),
-            fecha_registro=docente.get("fecha_registro"),
+            fecha_registro=docente.get("fecha_registro") or datetime.now(timezone.utc),
             grupos=grupos,
             tiene_grupos=len(grupos) > 0,
         )
@@ -68,14 +74,12 @@ class DocenteService:
     ) -> GrupoInfo:
         docente = await self.obtener_o_crear_docente(db, supabase_uid, correo)
         nuevo = await db.insert("grupos", {
-            "id_docente": docente["id"],
+            "docente_id": docente["id"],
             "nombre_grupo": payload.nombre_grupo,
-            "nombre_escuela": payload.nombre_escuela,
         })
         return GrupoInfo(
             id_grupo=nuevo["id"],
             nombre_grupo=nuevo["nombre_grupo"],
-            nombre_escuela=nuevo.get("nombre_escuela"),
             total_alumnos=0,
         )
 
@@ -90,7 +94,7 @@ class DocenteService:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Alumno no encontrado o sin permisos.")
         grupos = await db.query("grupos", filters={"id": rows[0]["id_grupo"]})
-        if not grupos or grupos[0]["id_docente"] != docente["id"]:
+        if not grupos or grupos[0]["docente_id"] != docente["id"]:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Alumno no encontrado o sin permisos.")
         alias_clean = alias.strip()
@@ -105,7 +109,7 @@ class DocenteService:
     ) -> GenerarCodigoResponse:
         docente = await self.obtener_o_crear_docente(db, supabase_uid, correo)
         grupos = await db.query("grupos", filters={"id": payload.id_grupo})
-        if not grupos or grupos[0]["id_docente"] != docente["id"]:
+        if not grupos or grupos[0]["docente_id"] != docente["id"]:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="No tienes permisos para generar códigos en este grupo.")
         expira = datetime.now(timezone.utc) + timedelta(hours=payload.horas_validez)
@@ -125,11 +129,11 @@ class DocenteService:
     # ── Analítica ─────────────────────────────────────────────────────────────
 
     async def analitica_grupo(
-        self, db, supabase_uid: str, correo: str, id_grupo: int, metrica: str | None
+        self, db, supabase_uid: str, correo: str, id_grupo: str, metrica: str | None
     ) -> AnaliticaGrupoResponse:
         docente = await self.obtener_o_crear_docente(db, supabase_uid, correo)
         grupos = await db.query("grupos", filters={"id": id_grupo})
-        if not grupos or grupos[0]["id_docente"] != docente["id"]:
+        if not grupos or grupos[0]["docente_id"] != docente["id"]:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="No tienes permisos para consultar este grupo.")
         grupo = grupos[0]
@@ -195,15 +199,14 @@ class DocenteService:
 
     # ── Helper privado ────────────────────────────────────────────────────────
 
-    async def _grupos_con_conteo(self, db, id_docente: int) -> list[GrupoInfo]:
-        grupos = await db.query("grupos", filters={"id_docente": id_docente})
+    async def _grupos_con_conteo(self, db, id_docente: str) -> list[GrupoInfo]:
+        grupos = await db.query("grupos", filters={"docente_id": id_docente})
         result = []
         for grupo in grupos:
             estudiantes = await db.query("estudiantes", filters={"id_grupo": grupo["id"]})
             result.append(GrupoInfo(
                 id_grupo=grupo["id"],
                 nombre_grupo=grupo["nombre_grupo"],
-                nombre_escuela=grupo.get("nombre_escuela"),
                 total_alumnos=len(estudiantes),
             ))
         return result

@@ -57,7 +57,7 @@ app.include_router(api_router)
 @app.exception_handler(500)
 async def server_error(request: Request, exc):
     return JSONResponse(
-        status_code=503,
+        status_code=500,
         content={
             "detail": "Error interno. Reintenta en 15 minutos.",
             "retry_after_seconds": 900,
