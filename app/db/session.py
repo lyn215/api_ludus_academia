@@ -2,13 +2,12 @@
 import ssl
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.pool import NullPool # Importante para evitar doble pooling
+from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 
 settings = get_settings()
 
-# Configuración SSL para despliegue en la nube
 ssl_context = ssl.create_default_context()
 ssl_context.check_hostname = False
 ssl_context.verify_mode = ssl.CERT_NONE
@@ -17,13 +16,24 @@ engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.APP_ENV == "development",
     poolclass=NullPool,
+    # ESTO ES LO NUEVO Y CRÍTICO:
+    # 1. connect_args con valores ENTEROS
     connect_args={
         "ssl": ssl_context,
         "timeout": 30,
-        "statement_cache_size": 0,          # <--- Entero, no string
-        "prepared_statement_cache_size": 0, # <--- Entero, no string
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+    },
+    # 2. Forzamos a SQLAlchemy a NO cachear nada y a "creer" que ya sabe la versión
+    execution_options={
+        "compiled_cache": None
     },
 )
+
+# 3. Bypass manual del Server Version Info (El culpable del log)
+# Esto evita que SQLAlchemy ejecute "select pg_catalog.version()"
+engine.dialect._is_postgresql = True
+engine.dialect.server_version_info = (15, 0) # Supabase suele usar Postgres 15+
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,

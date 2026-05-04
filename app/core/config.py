@@ -28,28 +28,21 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def ensure_supabase_pooler_config(cls, v: str) -> str:
-        if not v:
-            return v
-            
+        if not v: return v
         if v.startswith("postgresql://"):
             v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
         
         parsed = urlparse(v)
-        query_params = parse_qs(parsed.query)
-        
-        # Eliminamos lo que estorba
-        query_params.pop("sslmode", None) 
-        query_params.pop("statement_cache_size", None) # Lo quitamos del string
-        
+        # Solo cambiamos host y puerto, eliminamos TODA la query string 
+        # para que no haya conflictos de tipos (str vs int)
         new_netloc = parsed.netloc
         if "supabase.com" in new_netloc and "pooler" not in new_netloc:
             new_netloc = new_netloc.replace("supabase.com", "pooler.supabase.com")
-        
         if ":5432" in new_netloc:
             new_netloc = new_netloc.replace(":5432", ":6543")
             
-        new_query = urlencode(query_params, doseq=True)
-        return urlunparse(parsed._replace(netloc=new_netloc, query=new_query))
+        # Devolvemos la URL sin parámetros (?...), los parámetros van en session.py
+        return urlunparse(parsed._replace(netloc=new_netloc, query=""))
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
