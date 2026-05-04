@@ -10,7 +10,7 @@ asyncpg==0.29.0
 
 # Supabase HTTP client
 supabase==2.3.0
-httpx==0.24.1
+httpx==0.25.0
 
 # Auth (validación del JWT de Supabase)
 PyJWT[crypto]==2.9.0
