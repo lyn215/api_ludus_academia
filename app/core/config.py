@@ -1,5 +1,6 @@
 """app/core/config.py"""
 from functools import lru_cache
+from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -21,6 +22,32 @@ class Settings(BaseSettings):
     INVITE_CODE_EXPIRY_HOURS: int = 24
 
     ALLOWED_ORIGINS: list[str] = ["http://localhost:5173"]
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def ensure_statement_cache_size(cls, v: str) -> str:
+        """
+        Asegura que statement_cache_size=0 esté en la URL para pgbouncer.
+        Si no está presente, lo agrega automáticamente.
+        """
+        if not v or "statement_cache_size" in v:
+            return v
+        
+        # Parsear la URL
+        parsed = urlparse(v)
+        
+        # Parsear query parameters existentes
+        query_params = parse_qs(parsed.query, keep_blank_values=True)
+        
+        # Agregar statement_cache_size=0
+        query_params["statement_cache_size"] = ["0"]
+        
+        # Reconstruir query string (sin usar '+' para espacios)
+        new_query = urlencode(query_params, doseq=True)
+        
+        # Reconstruir URL
+        new_parsed = parsed._replace(query=new_query)
+        return urlunparse(new_parsed)
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
