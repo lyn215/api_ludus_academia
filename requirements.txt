@@ -8,6 +8,9 @@ pydantic-settings==2.3.1
 sqlalchemy[asyncio]==2.0.31
 asyncpg==0.29.0
 
+# Supabase HTTP client
+supabase==2.3.0
+
 # Auth (validación del JWT de Supabase)
 PyJWT[crypto]==2.9.0
 httpx==0.27.0
