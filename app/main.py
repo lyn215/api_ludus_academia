@@ -10,14 +10,14 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
-from app.db.session import init_db
+# from app.db.session import init_db  # Comentado: SQLAlchemy causa DuplicatePreparedStatementError en Render
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()
+    # await init_db()  # Comentado: SQLAlchemy causa DuplicatePreparedStatementError en Render
     yield
 
 
