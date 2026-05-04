@@ -1,4 +1,5 @@
 """app/db/session.py"""
+import ssl
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -6,26 +7,30 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+# Creamos un contexto SSL que no verifique el certificado (común en despliegues cloud)
+ssl_context = ssl.create_default_context()
+ssl_context.check_hostname = False
+ssl_context.verify_mode = ssl.CERT_NONE
+
 
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.APP_ENV == "development",
     future=True,
     pool_pre_ping=True,
-    pool_size=3,  # Reducido para pooler
+    pool_size=3,
     max_overflow=2,
     pool_timeout=30,
-    pool_recycle=3600,  # Reciclar conexiones cada hora
+    pool_recycle=3600,
     connect_args={
         "statement_cache_size": 0,
         "timeout": 15,
         "server_settings": {
             "jit": "off",
         },
-        "ssl": True,  # <--- Añade esto para Supabase
+        "ssl": ssl_context,  # <--- Pasamos el contexto que creamos arriba
     },
     execution_options={"compiled_cache": None},
-    # SQLAlchemy 2.0: desactiva compiled statement cache
 )
 
 AsyncSessionLocal = async_sessionmaker(
