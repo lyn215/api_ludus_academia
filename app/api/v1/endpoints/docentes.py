@@ -119,13 +119,12 @@ async def reporte_pdf(
 ):
     from app.services.reporte_service import ReporteService
 
-    docente = await service.obtener_o_crear_docente(db, supabase_uid, correo)
     rows = await db.query("estudiantes", filters={"uuid_estudiante": uuid_estudiante})
     if not rows:
         raise HTTPException(status_code=404, detail="Alumno no encontrado.")
     estudiante = rows[0]
     grupos = await db.query("grupos", filters={"id": estudiante["id_grupo"]})
-    if not grupos or grupos[0]["docente_id"] != docente["id"]:
+    if not grupos or grupos[0]["docente_id"] != supabase_uid:
         raise HTTPException(status_code=403, detail="No tienes acceso a este alumno.")
     pdf_bytes = await ReporteService().generar_pdf(db, estudiante, grupos[0]["nombre_grupo"])
     alias = estudiante.get("alias_estudiante") or uuid_estudiante[:8]
