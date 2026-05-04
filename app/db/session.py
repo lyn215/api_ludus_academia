@@ -10,6 +10,15 @@ engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.APP_ENV == "development",
     future=True,
+    connect_args={
+        "server_settings": {
+            "jit": "off",
+            "application_name": "ludusacademia",
+        }
+    },
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10,
 )
 
 AsyncSessionLocal = async_sessionmaker(
