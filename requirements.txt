@@ -9,7 +9,7 @@ sqlalchemy[asyncio]==2.0.31
 asyncpg==0.29.0
 
 # Supabase HTTP client
-supabase==2.4.5
+supabase==2.0.3
 httpx==0.24.1
 
 # Auth (validación del JWT de Supabase)
