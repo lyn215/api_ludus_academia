@@ -1,4 +1,5 @@
 """app/db/session.py"""
+import json
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -11,7 +12,12 @@ engine = create_async_engine(
     echo=settings.APP_ENV == "development",
     future=True,
     pool_pre_ping=True,
-    connect_args={"statement_cache_size": 0},
+    connect_args={
+        "statement_cache_size": 0,
+        "server_settings": {"jit": "off"},
+    },
+    json_serializer=json.dumps,
+    json_deserializer=json.loads,
 )
 
 AsyncSessionLocal = async_sessionmaker(
