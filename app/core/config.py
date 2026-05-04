@@ -23,25 +23,24 @@ class Settings(BaseSettings):
 
     ALLOWED_ORIGINS: list[str] = ["http://localhost:5173"]
 
+    # app/core/config.py (Solo la parte del validador)
+
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def ensure_supabase_pooler_config(cls, v: str) -> str:
         if not v:
             return v
             
-        # 1. Asegurar que use el driver asíncrono correcto
         if v.startswith("postgresql://"):
             v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
         
-        # 2. Parsear la URL para manipularla de forma segura
         parsed = urlparse(v)
         query_params = parse_qs(parsed.query)
         
-        # 3. ELIMINAR parámetros que rompen asyncpg (el culpable del error)
+        # Eliminamos lo que estorba
         query_params.pop("sslmode", None) 
+        query_params.pop("statement_cache_size", None) # Lo quitamos del string
         
-        # 4. Asegurar configuración para el Pooler de Supabase
-        # Forzar puerto y host de pooler si es necesario
         new_netloc = parsed.netloc
         if "supabase.com" in new_netloc and "pooler" not in new_netloc:
             new_netloc = new_netloc.replace("supabase.com", "pooler.supabase.com")
@@ -49,14 +48,8 @@ class Settings(BaseSettings):
         if ":5432" in new_netloc:
             new_netloc = new_netloc.replace(":5432", ":6543")
             
-        # 5. Parámetros críticos para estabilidad
-        query_params["statement_cache_size"] = ["0"]
-        
-        # Reconstruir la URL limpia
         new_query = urlencode(query_params, doseq=True)
-        v = urlunparse(parsed._replace(netloc=new_netloc, query=new_query))
-        
-        return v
+        return urlunparse(parsed._replace(netloc=new_netloc, query=new_query))
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod

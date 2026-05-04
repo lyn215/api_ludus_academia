@@ -20,12 +20,8 @@ engine = create_async_engine(
     connect_args={
         "ssl": ssl_context,
         "timeout": 30,
-        "command_timeout": 30,
-    },
-    # ESTO ES LO CRÍTICO: 
-    # Forzamos a que asyncpg desactive los prepared statements en cada conexión
-    execution_options={
-        "compiled_cache": None
+        "statement_cache_size": 0,          # <--- Entero, no string
+        "prepared_statement_cache_size": 0, # <--- Entero, no string
     },
 )
 
