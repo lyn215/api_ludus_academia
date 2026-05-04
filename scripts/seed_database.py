@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
 """
 scripts/seed_database.py
-Carga bancos de preguntas desde un JSON a Supabase (PostgreSQL).
+Carga bancos de preguntas en Supabase usando la REST API (HTTPS port 443).
+Funciona en GitHub Codespaces y cualquier entorno donde el puerto 5432 esté bloqueado.
 
 Uso:
     python scripts/seed_database.py [ruta_json]
 
-    Si no se especifica ruta_json se usa /home/claude/seed_preguntas_inicial.json.
+    Si no se especifica ruta_json se usa scripts/seed_preguntas_inicial.json.
 
-Variables de entorno (alternativa a hardcodear):
-    DATABASE_URL  — connection string de PostgreSQL
+Variables de entorno (o en archivo .env en la raíz del proyecto):
+    SUPABASE_URL              — https://xyzxyz.supabase.co
+    SUPABASE_SERVICE_ROLE_KEY — clave service_role (Project Settings → API)
 """
-import asyncio
 import json
 import os
 import sys
-import traceback
 
-import asyncpg
+import httpx
+from dotenv import load_dotenv
 
-# ── Colores ANSI ───────────────────────────────────────────────────────────────
+# ── Colores ANSI ──────────────────────────────────────────────────────────────
 
 _RESET  = "\033[0m"
 _BOLD   = "\033[1m"
@@ -30,29 +31,64 @@ _CYAN   = "\033[96m"
 _DIM    = "\033[2m"
 
 
-def ok(msg: str)    -> None: print(f"  {_GREEN}✅{_RESET} {msg}")
-def err(msg: str)   -> None: print(f"  {_RED}✗  {_RESET} {msg}", file=sys.stderr)
-def info(msg: str)  -> None: print(f"{_CYAN}ℹ  {_RESET} {msg}")
-def warn(msg: str)  -> None: print(f"{_YELLOW}⚠  {_RESET} {msg}")
-def header(msg: str)-> None: print(f"\n{_BOLD}{_CYAN}{msg}{_RESET}")
+def ok(msg: str)     -> None: print(f"  {_GREEN}✅{_RESET} {msg}")
+def err(msg: str)    -> None: print(f"  {_RED}✗  {_RESET} {msg}", file=sys.stderr)
+def info(msg: str)   -> None: print(f"{_CYAN}ℹ  {_RESET} {msg}")
+def warn(msg: str)   -> None: print(f"{_YELLOW}⚠  {_RESET} {msg}")
+def header(msg: str) -> None: print(f"\n{_BOLD}{_CYAN}{msg}{_RESET}")
 
 
-# ── Constante de conexión ─────────────────────────────────────────────────────
+# ── Credenciales ──────────────────────────────────────────────────────────────
 
-_DEFAULT_DATABASE_URL = (
-    "postgresql://postgres:Dez6XRXwOiHFHo7A"
-    "@db.bbyhevcprqxntsaknwul.supabase.co:5432/postgres"
-)
+_PROJECT_REF    = "bbyhevcprqxntsaknwul"
+_SUPABASE_URL   = f"https://{_PROJECT_REF}.supabase.co"
 
 
-def get_database_url() -> str:
-    return os.environ.get("DATABASE_URL", _DEFAULT_DATABASE_URL)
+def _get_credentials() -> tuple[str, str]:
+    """Devuelve (supabase_url, service_role_key). Lee .env si existe."""
+    load_dotenv()
+    url = os.environ.get("SUPABASE_URL", _SUPABASE_URL)
+    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    return url, key
+
+
+# ── Cliente HTTP ──────────────────────────────────────────────────────────────
+
+def _make_client(url: str, key: str) -> httpx.Client:
+    return httpx.Client(
+        base_url=f"{url}/rest/v1",
+        headers={
+            "apikey":        key,
+            "Authorization": f"Bearer {key}",
+            "Content-Type":  "application/json",
+            "Prefer":        "return=representation",
+        },
+        timeout=30,
+    )
+
+
+def _insert_one(client: httpx.Client, table: str, payload: dict) -> dict:
+    """Inserta una fila y devuelve el registro creado (con id generado por Supabase)."""
+    resp = client.post(f"/{table}", json=payload)
+    if resp.status_code not in (200, 201):
+        raise RuntimeError(
+            f"POST /{table} → {resp.status_code}\n{resp.text}"
+        )
+    rows = resp.json()
+    return rows[0] if isinstance(rows, list) else rows
 
 
 # ── Lógica principal ──────────────────────────────────────────────────────────
 
-async def seed_database(json_path: str) -> None:
-    database_url = get_database_url()
+def seed_database(json_path: str) -> None:
+    supabase_url, service_key = _get_credentials()
+
+    if not service_key:
+        err("No se encontró SUPABASE_SERVICE_ROLE_KEY.")
+        err("Agrégala al archivo .env o como variable de entorno:")
+        err("  SUPABASE_SERVICE_ROLE_KEY=eyJ...")
+        err("  (Project Settings → API → service_role en supabase.com)")
+        sys.exit(1)
 
     # ── Leer JSON ──────────────────────────────────────────────────────────────
     info(f"Leyendo {json_path} …")
@@ -61,145 +97,121 @@ async def seed_database(json_path: str) -> None:
 
     bancos = data.get("bancos", [])
     if not bancos:
-        warn("El JSON no contiene ningún banco en la clave 'bancos'. Nada que insertar.")
+        warn("El JSON no contiene ningún banco en la clave 'bancos'.")
         return
 
     info(f"Bancos encontrados en el JSON: {len(bancos)}")
+    info(f"Conectando a {supabase_url} vía REST API …\n")
 
-    # ── Conectar ───────────────────────────────────────────────────────────────
-    info("Conectando a Supabase …")
-    try:
-        conn = await asyncpg.connect(database_url)
-    except Exception as exc:
-        err(f"No se pudo conectar a la base de datos: {exc}")
-        sys.exit(1)
+    bancos_ok    = 0
+    preguntas_ok = 0
+    opciones_ok  = 0
+    fallidos     = 0
 
-    info("Conexión establecida.\n")
+    with _make_client(supabase_url, service_key) as client:
 
-    # ── Contadores globales ───────────────────────────────────────────────────
-    bancos_ok       = 0
-    preguntas_ok    = 0
-    opciones_ok     = 0
-    bancos_fallidos = 0
+        # Verificar conectividad antes de empezar
+        try:
+            probe = client.get("/bancos_preguntas?limit=0")
+            if probe.status_code == 401:
+                err("Error 401 — service_role_key inválida o incorrecta.")
+                sys.exit(1)
+            if probe.status_code not in (200, 206):
+                err(f"Error al verificar conexión: {probe.status_code} {probe.text}")
+                sys.exit(1)
+        except httpx.ConnectError as exc:
+            err(f"No se pudo conectar a {supabase_url}: {exc}")
+            sys.exit(1)
 
-    try:
+        info("Conexión verificada ✓\n")
+
         for banco_data in bancos:
-            nombre_banco = banco_data.get("nombre", "(sin nombre)")
+            nombre_banco  = banco_data.get("nombre", "(sin nombre)")
+            materia_banco = banco_data.get("materia")
             header(f"Banco: {nombre_banco}")
 
             try:
-                async with conn.transaction():
-                    # ── 1. Insertar banco ──────────────────────────────────────
-                    banco_id = await conn.fetchval(
-                        """
-                        INSERT INTO bancos_preguntas
-                            (nombre, descripcion, materia, nivel_grado, es_oficial)
-                        VALUES ($1, $2, $3, $4, $5)
-                        RETURNING id
-                        """,
-                        banco_data.get("nombre"),
-                        banco_data.get("descripcion"),
-                        banco_data.get("materia"),
-                        banco_data.get("nivel_grado"),
-                        banco_data.get("es_oficial", False),
-                    )
+                # ── 1. Insertar banco ──────────────────────────────────────────
+                banco_row = _insert_one(client, "bancos_preguntas", {
+                    "nombre":      banco_data.get("nombre"),
+                    "descripcion": banco_data.get("descripcion"),
+                    "materia":     materia_banco,
+                    "nivel_grado": banco_data.get("nivel_grado"),
+                    "es_oficial":  banco_data.get("es_oficial", False),
+                })
+                banco_id = banco_row["id"]
+                ok(f"{_BOLD}Banco creado:{_RESET} {nombre_banco} {_DIM}({banco_id}){_RESET}")
+                bancos_ok += 1
 
-                    ok(f"{_BOLD}Banco creado:{_RESET} {nombre_banco} {_DIM}({banco_id}){_RESET}")
-                    bancos_ok += 1
+                # ── 2. Preguntas ───────────────────────────────────────────────
+                for idx, p in enumerate(banco_data.get("preguntas", []), start=1):
+                    pregunta_row = _insert_one(client, "preguntas", {
+                        "texto_pregunta": p["texto_pregunta"],
+                        "tipo_pregunta":  p["tipo_pregunta"],
+                        "materia":        materia_banco,      # heredada del banco
+                        "dificultad":     p.get("dificultad"),
+                        "pista_texto":    p.get("pista_texto"),
+                        "explicacion":    p.get("explicacion"),
+                    })
+                    pregunta_id = pregunta_row["id"]
 
-                    preguntas = banco_data.get("preguntas", [])
-                    materia_banco = banco_data.get("materia")
+                    # ── 3. Opciones ────────────────────────────────────────────
+                    for opcion in p.get("opciones", []):
+                        _insert_one(client, "opciones_respuesta", {
+                            "pregunta_id":  pregunta_id,
+                            "texto_opcion": opcion["texto_opcion"],
+                            "es_correcta":  opcion.get("es_correcta", False),
+                            "orden":        opcion.get("orden"),
+                        })
+                        opciones_ok += 1
 
-                    for idx, pregunta_data in enumerate(preguntas, start=1):
-                        # ── 2. Insertar pregunta ───────────────────────────────
-                        pregunta_id = await conn.fetchval(
-                            """
-                            INSERT INTO preguntas
-                                (texto_pregunta, tipo_pregunta, materia, dificultad,
-                                 pista_texto, explicacion)
-                            VALUES ($1, $2, $3, $4, $5, $6)
-                            RETURNING id
-                            """,
-                            pregunta_data["texto_pregunta"],
-                            pregunta_data["tipo_pregunta"],
-                            materia_banco,                       # heredada del banco
-                            pregunta_data.get("dificultad"),
-                            pregunta_data.get("pista_texto"),
-                            pregunta_data.get("explicacion"),
-                        )
+                    # ── 4. Asignación banco ↔ pregunta ─────────────────────────
+                    _insert_one(client, "banco_pregunta_asignacion", {
+                        "banco_id":      banco_id,
+                        "pregunta_id":   pregunta_id,
+                        "orden_en_banco": idx,
+                    })
 
-                        # ── 3. Insertar opciones ───────────────────────────────
-                        opciones = pregunta_data.get("opciones", [])
-                        for opcion in opciones:
-                            await conn.execute(
-                                """
-                                INSERT INTO opciones_respuesta
-                                    (pregunta_id, texto_opcion, es_correcta, orden)
-                                VALUES ($1, $2, $3, $4)
-                                """,
-                                pregunta_id,
-                                opcion["texto_opcion"],
-                                opcion.get("es_correcta", False),
-                                opcion.get("orden"),
-                            )
-                            opciones_ok += 1
-
-                        # ── 4. Asignar pregunta al banco ───────────────────────
-                        await conn.execute(
-                            """
-                            INSERT INTO banco_pregunta_asignacion
-                                (banco_id, pregunta_id, orden_en_banco)
-                            VALUES ($1, $2, $3)
-                            """,
-                            banco_id,
-                            pregunta_id,
-                            idx,
-                        )
-
-                        texto_corto = pregunta_data["texto_pregunta"][:60]
-                        if len(pregunta_data["texto_pregunta"]) > 60:
-                            texto_corto += "…"
-                        ok(f"  Pregunta {idx:>2}: {texto_corto}")
-                        preguntas_ok += 1
+                    texto_corto = p["texto_pregunta"][:60]
+                    if len(p["texto_pregunta"]) > 60:
+                        texto_corto += "…"
+                    ok(f"  Pregunta {idx:>2}: {texto_corto}")
+                    preguntas_ok += 1
 
             except Exception as exc:
-                bancos_fallidos += 1
-                err(f"Falló el banco '{nombre_banco}' — se hizo rollback.")
+                fallidos += 1
+                err(f"Falló el banco '{nombre_banco}'.")
                 err(f"Detalle: {exc}")
-                if os.environ.get("SEED_VERBOSE"):
-                    traceback.print_exc()
-
-    finally:
-        await conn.close()
 
     # ── Resumen ────────────────────────────────────────────────────────────────
     print()
-    if bancos_fallidos == 0:
+    if fallidos == 0:
         print(f"{_BOLD}{_GREEN}🎉 Seed completado exitosamente!{_RESET}")
     else:
-        print(f"{_BOLD}{_YELLOW}⚠  Seed finalizado con {bancos_fallidos} banco(s) fallido(s).{_RESET}")
+        print(f"{_BOLD}{_YELLOW}⚠  Seed finalizado con {fallidos} banco(s) fallido(s).{_RESET}")
 
     print(f"\n{_BOLD}📊 Resumen:{_RESET}")
-    print(f"   - Bancos insertados  : {bancos_ok}")
+    print(f"   - Bancos insertados   : {bancos_ok}")
     print(f"   - Preguntas insertadas: {preguntas_ok}")
     print(f"   - Opciones insertadas : {opciones_ok}")
-    if bancos_fallidos:
-        print(f"   {_RED}- Bancos fallidos    : {bancos_fallidos}{_RESET}")
+    if fallidos:
+        print(f"   {_RED}- Bancos fallidos    : {fallidos}{_RESET}")
 
 
-# ── Entry point ────────────────────────────────────────────────────────────────
+# ── Entry point ───────────────────────────────────────────────────────────────
 
 def main() -> None:
-    default_path = "/home/claude/seed_preguntas_inicial.json"
+    default_path = os.path.join(
+        os.path.dirname(__file__), "seed_preguntas_inicial.json"
+    )
     json_path = sys.argv[1] if len(sys.argv) > 1 else default_path
 
     if not os.path.isfile(json_path):
-        print(f"{_RED}Error: no se encontró el archivo JSON: {json_path}{_RESET}",
-              file=sys.stderr)
+        err(f"No se encontró el archivo JSON: {json_path}")
         print("Uso: python scripts/seed_database.py [ruta_json]", file=sys.stderr)
         sys.exit(1)
 
-    asyncio.run(seed_database(json_path))
+    seed_database(json_path)
 
 
 if __name__ == "__main__":

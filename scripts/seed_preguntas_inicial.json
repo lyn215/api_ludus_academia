@@ -1,0 +1,742 @@
+{
+  "bancos": [
+    {
+      "nombre": "Matemáticas 3° y 4° - Fase 4",
+      "descripcion": "Aritmética, geometría, fracciones y medición para tercero y cuarto grado de primaria",
+      "materia": "Matemáticas",
+      "nivel_grado": 3,
+      "es_oficial": true,
+      "preguntas": [
+        {
+          "texto_pregunta": "¡Atrapa el resultado de 150 + 50!",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Suma las centenas: 1 + 0 = 1, y las decenas: 5 + 5 = 10",
+          "explicacion": "¡Excelente! 150 y 50 suman 200.",
+          "opciones": [
+            {"texto_opcion": "200", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "100", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "250", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuánto falta a 80 para llegar a 100?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Piensa: ¿cuánto necesito agregar a 80?",
+          "explicacion": "¡Bien! 80 más 20 son 100.",
+          "opciones": [
+            {"texto_opcion": "20", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "30", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "10", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¡Salta al bloque de 500 - 100!",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Resta las centenas: 5 - 1 = 4",
+          "explicacion": "¡Increíble! 500 menos 100 es 400.",
+          "opciones": [
+            {"texto_opcion": "400", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "600", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "300", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Suma estas gemas: 25 + 25.",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Es el doble de 25",
+          "explicacion": "¡Genial! Dos gemas de 25 valen 50.",
+          "opciones": [
+            {"texto_opcion": "50", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "40", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "60", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuál es el doble de 15?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "15 + 15 = ?",
+          "explicacion": "¡Correcto! 15 más 15 son 30.",
+          "opciones": [
+            {"texto_opcion": "30", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "25", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "40", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¡Multiplica rápido! 5 x 4",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "5 + 5 + 5 + 5",
+          "explicacion": "¡Bien! 5 veces 4 es 20.",
+          "opciones": [
+            {"texto_opcion": "20", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "25", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "9", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Reparte 12 gemas entre 3 cofres.",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Divide 12 entre 3",
+          "explicacion": "¡Exacto! 4 gemas en cada cofre.",
+          "opciones": [
+            {"texto_opcion": "4", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "3", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "6", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuánto es 10 x 7?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Agrega un cero al 7",
+          "explicacion": "¡Rápido! 10 por 7 son 70.",
+          "opciones": [
+            {"texto_opcion": "70", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "17", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "107", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Si 2 x 8 = 16, ¿cuánto es 16 / 2?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "La división es la operación inversa",
+          "explicacion": "¡Operación inversa! Es 8.",
+          "opciones": [
+            {"texto_opcion": "8", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "4", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "10", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¡Busca el triple de 6!",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "6 x 3 o 6 + 6 + 6",
+          "explicacion": "¡Súper! 6 + 6 + 6 es 18.",
+          "opciones": [
+            {"texto_opcion": "18", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "12", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "9", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuántos lados tiene un triángulo?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Tri- significa tres",
+          "explicacion": "¡Tri-ángulo! Tiene 3 lados.",
+          "opciones": [
+            {"texto_opcion": "3", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "4", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "5", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cómo se llama un bloque de 4 lados iguales?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Tiene forma de caja cuadrada",
+          "explicacion": "¡Exacto! Es un cuadrado.",
+          "opciones": [
+            {"texto_opcion": "Cuadrado", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Triángulo", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Círculo", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuántas caras tiene este cubo?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Cuenta todos sus lados planos",
+          "explicacion": "¡Bien! El cubo tiene 6 caras.",
+          "opciones": [
+            {"texto_opcion": "6", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "4", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "8", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Un triángulo con 3 lados iguales es...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Equi- significa igual",
+          "explicacion": "¡Sí! Equi- significa igual.",
+          "opciones": [
+            {"texto_opcion": "Equilátero", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Isósceles", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Escaleno", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuál figura no tiene esquinas (vértices)?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Es redonda",
+          "explicacion": "¡Correcto! El círculo es curvo.",
+          "opciones": [
+            {"texto_opcion": "Círculo", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Cuadrado", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Triángulo", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿30 minutos son?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "La mitad de una hora",
+          "explicacion": "¡Bien! 30 min es media hora.",
+          "opciones": [
+            {"texto_opcion": "Media hora", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Una hora", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Un cuarto de hora", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuántos gramos hay en medio kilo?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Un kilo tiene 1000 gramos",
+          "explicacion": "¡Exacto! 500 es la mitad de 1000.",
+          "opciones": [
+            {"texto_opcion": "500 g", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "250 g", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "1000 g", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Qué es más largo?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Compara las unidades de medida",
+          "explicacion": "¡Sí! El metro es la unidad mayor aquí.",
+          "opciones": [
+            {"texto_opcion": "1 metro", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "1 centímetro", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "1 milímetro", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Dos botellas de medio litro suman...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "1/2 + 1/2 = ?",
+          "explicacion": "¡Excelente! 1/2 + 1/2 = 1.",
+          "opciones": [
+            {"texto_opcion": "1 litro", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "2 litros", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Medio litro", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuántos minutos tiene una hora?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Cuenta de 5 en 5 en el reloj",
+          "explicacion": "¡Correcto! 60 minutos.",
+          "opciones": [
+            {"texto_opcion": "60", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "100", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "30", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¡Atrapa la mitad de esta manzana!",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Una de dos partes iguales",
+          "explicacion": "¡Bien! 1/2 es la mitad.",
+          "opciones": [
+            {"texto_opcion": "1/2", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "1/4", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "1/8", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuántos cuartos forman un entero?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Divide algo en 4 partes iguales",
+          "explicacion": "¡Exacto! Cuatro de 1/4.",
+          "opciones": [
+            {"texto_opcion": "4", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "2", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "8", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Si divides un pastel en 8, cada parte es...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Una de ocho partes",
+          "explicacion": "¡Súper! Es un octavo.",
+          "opciones": [
+            {"texto_opcion": "1/8", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "1/4", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "1/2", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Qué es más grande?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Entre menos partes, más grandes son",
+          "explicacion": "¡Correcto! Entre menos partes, más grandes.",
+          "opciones": [
+            {"texto_opcion": "1/2", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "1/4", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "1/8", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Dos octavos (2/8) equivalen a...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 3,
+          "pista_texto": "Simplifica la fracción",
+          "explicacion": "¡Bien! Son equivalentes.",
+          "opciones": [
+            {"texto_opcion": "1/4", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "1/2", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "1/1", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cómo se escribe diez mil quinientos?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 3,
+          "pista_texto": "10 mil + 500",
+          "explicacion": "¡Bien! Cinco cifras.",
+          "opciones": [
+            {"texto_opcion": "10,500", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "1,500", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "100,500", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¡Salta al número mayor!",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 3,
+          "pista_texto": "Cuenta las cifras",
+          "explicacion": "¡Exacto! El de más cifras es mayor.",
+          "opciones": [
+            {"texto_opcion": "45,000", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "4,500", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "450", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuánto es 0.5 + 0.5?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 3,
+          "pista_texto": "Suma los decimales",
+          "explicacion": "¡Genial! Dos medios hacen uno.",
+          "opciones": [
+            {"texto_opcion": "1.0", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "0.10", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "5.5", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "En 12,345, ¿qué vale el 2?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 3,
+          "pista_texto": "Está en el lugar de las unidades de millar",
+          "explicacion": "¡Bien! Son unidades de millar.",
+          "opciones": [
+            {"texto_opcion": "2,000", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "200", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "20", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¡Atrapa el resultado de 1.50 + 0.25!",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 3,
+          "pista_texto": "Alinea los puntos decimales",
+          "explicacion": "¡Súper! Suma de decimales.",
+          "opciones": [
+            {"texto_opcion": "1.75", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "1.25", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "2.00", "es_correcta": false, "orden": 3}
+          ]
+        }
+      ]
+    },
+    {
+      "nombre": "Español 3° y 4° - Fase 4",
+      "descripcion": "Ortografía, gramática, lectura y redacción para tercero y cuarto grado de primaria",
+      "materia": "Español",
+      "nivel_grado": 3,
+      "es_oficial": true,
+      "preguntas": [
+        {
+          "texto_pregunta": "¿Con qué letra empieza un nombre propio?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Los nombres de personas y lugares son especiales",
+          "explicacion": "¡Bien! Los nombres siempre van con mayúscula.",
+          "opciones": [
+            {"texto_opcion": "Mayúscula", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Minúscula", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Número", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Qué va al final de una oración?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Termina la idea completa",
+          "explicacion": "¡Exacto! El punto cierra la idea.",
+          "opciones": [
+            {"texto_opcion": "Punto", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Coma", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Nada", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "México empieza con letra...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Es el nombre de nuestro país",
+          "explicacion": "¡Súper! Es el nombre de nuestro país.",
+          "opciones": [
+            {"texto_opcion": "Mayúscula", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Minúscula", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Cursiva", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuántas letras tiene la palabra GATO?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Cuenta cada letra: G-A-T-O",
+          "explicacion": "¡Bien! G-A-T-O son cuatro letras.",
+          "opciones": [
+            {"texto_opcion": "4", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "3", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "5", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "La palabra casa se escribe con...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Escucha el sonido suave",
+          "explicacion": "¡Correcto! Casa lleva c al inicio.",
+          "opciones": [
+            {"texto_opcion": "c", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "s", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "z", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuántas sílabas tiene MA-RI-PO-SA?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Cuenta con palmaditas",
+          "explicacion": "¡Bien! Cuatro palmaditas.",
+          "opciones": [
+            {"texto_opcion": "4", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "3", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "5", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "SOL tiene...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Es una palabra muy corta",
+          "explicacion": "¡Exacto! Es una palabra corta.",
+          "opciones": [
+            {"texto_opcion": "1 sílaba", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "2 sílabas", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "3 sílabas", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Qué palabra tiene 2 sílabas?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Separa y cuenta: ME-SA",
+          "explicacion": "¡Súper! ME-SA son dos.",
+          "opciones": [
+            {"texto_opcion": "Mesa", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Mariposa", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Pan", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cómo se separa LIBRO?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Busca las vocales",
+          "explicacion": "¡Correcto! Dos sílabas.",
+          "opciones": [
+            {"texto_opcion": "LI-BRO", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "LIB-RO", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "L-IBRO", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "La palabra PELOTA se divide en...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Cada vocal es el centro de una sílaba",
+          "explicacion": "¡Genial! Tres partes.",
+          "opciones": [
+            {"texto_opcion": "PE-LO-TA", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "PEL-O-TA", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "PE-LOT-A", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Qué palabra nombra a una persona?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Nombra a alguien",
+          "explicacion": "¡Bien! Niño es un sustantivo.",
+          "opciones": [
+            {"texto_opcion": "Niño", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Correr", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Bonito", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuál es un nombre propio?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Los nombres de personas van con mayúscula",
+          "explicacion": "¡Exacto! Va con mayúscula.",
+          "opciones": [
+            {"texto_opcion": "María", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "mesa", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "perro", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Qué nombra un lugar?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Donde estudias",
+          "explicacion": "¡Súper! La escuela es un lugar.",
+          "opciones": [
+            {"texto_opcion": "Escuela", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Alto", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Caminar", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Perro, gato, pájaro son...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Todos son seres vivos que no son plantas",
+          "explicacion": "¡Bien! Son sustantivos de animales.",
+          "opciones": [
+            {"texto_opcion": "Animales", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Colores", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Acciones", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Qué palabra es una acción?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Algo que puedes hacer",
+          "explicacion": "¡Bien! Saltar es un verbo.",
+          "opciones": [
+            {"texto_opcion": "Saltar", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Mesa", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Grande", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Yo _____ a la escuela.",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "¿Qué haces para llegar a la escuela?",
+          "explicacion": "¡Exacto! Voy es la acción.",
+          "opciones": [
+            {"texto_opcion": "voy", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "mesa", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "azul", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuál es el verbo en: 'El niño corre rápido'?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "¿Qué hace el niño?",
+          "explicacion": "¡Súper! Corre es la acción.",
+          "opciones": [
+            {"texto_opcion": "Corre", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Niño", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Rápido", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Los pájaros _____ en el cielo.",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "¿Qué hacen los pájaros?",
+          "explicacion": "¡Bien! Vuelan es el verbo.",
+          "opciones": [
+            {"texto_opcion": "vuelan", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "árbol", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "bonitos", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "En un cuento, ¿qué viene primero?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Todas las historias tienen un comienzo",
+          "explicacion": "¡Bien! Todo empieza al inicio.",
+          "opciones": [
+            {"texto_opcion": "Inicio", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Final", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Nudo", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Quién cuenta la historia?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "La voz que nos relata lo que pasa",
+          "explicacion": "¡Exacto! El narrador nos la cuenta.",
+          "opciones": [
+            {"texto_opcion": "El narrador", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "El lector", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "El libro", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "'Había una vez' es el inicio de...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Frase clásica de historias",
+          "explicacion": "¡Correcto! Así empiezan los cuentos.",
+          "opciones": [
+            {"texto_opcion": "Un cuento", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Una receta", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Una carta", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Qué pasa en el nudo del cuento?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "La parte más emocionante",
+          "explicacion": "¡Exacto! Ahí está el conflicto.",
+          "opciones": [
+            {"texto_opcion": "El problema", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "El final feliz", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "La presentación", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Qué palabra está formada por dos?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Une dos palabras: saca + puntas",
+          "explicacion": "¡Bien! Saca + puntas.",
+          "opciones": [
+            {"texto_opcion": "Sacapuntas", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Libro", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Mesa", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Paraguas se forma de...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Para protegerse de las aguas",
+          "explicacion": "¡Exacto! Para las aguas.",
+          "opciones": [
+            {"texto_opcion": "Para + aguas", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Par + aguas", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Paragua + s", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Cuál es sinónimo de 'grande'?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Otra palabra que signifique lo mismo",
+          "explicacion": "¡Súper! Ambos significan lo mismo.",
+          "opciones": [
+            {"texto_opcion": "Enorme", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Pequeño", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Mediano", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Lo contrario de 'feliz' es...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Cuando no estás contento",
+          "explicacion": "¡Bien! Son antónimos.",
+          "opciones": [
+            {"texto_opcion": "Triste", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Contento", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Alegre", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "¿Qué palabra describe 'el perro'?",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 1,
+          "pista_texto": "Una cualidad del perro",
+          "explicacion": "¡Bien! Grande es adjetivo.",
+          "opciones": [
+            {"texto_opcion": "Grande", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Corre", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Collar", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "La casa _____ es muy bonita.",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Debe concordar con 'casa' (femenino)",
+          "explicacion": "¡Exacto! Concuerda con 'casa'.",
+          "opciones": [
+            {"texto_opcion": "roja", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "rojo", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "rojos", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "Los niños están ______.",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Plural como 'niños'",
+          "explicacion": "¡Bien! Plural como 'niños'.",
+          "opciones": [
+            {"texto_opcion": "felices", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "feliz", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "feliza", "es_correcta": false, "orden": 3}
+          ]
+        },
+        {
+          "texto_pregunta": "La coma sirve para...",
+          "tipo_pregunta": "opcion_multiple",
+          "dificultad": 2,
+          "pista_texto": "Cuando lees, respiras brevemente",
+          "explicacion": "¡Bien! Es una pausa breve.",
+          "opciones": [
+            {"texto_opcion": "Hacer pausas", "es_correcta": true, "orden": 1},
+            {"texto_opcion": "Terminar", "es_correcta": false, "orden": 2},
+            {"texto_opcion": "Preguntar", "es_correcta": false, "orden": 3}
+          ]
+        }
+      ]
+    }
+  ]
+}
