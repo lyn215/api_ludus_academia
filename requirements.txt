@@ -4,9 +4,9 @@ uvicorn[standard]==0.30.1
 pydantic==2.7.3
 pydantic-settings==2.3.1
 
-# Base de datos (SQLite async)
-sqlalchemy==2.0.31
-aiosqlite==0.20.0
+# Base de datos (PostgreSQL async)
+sqlalchemy[asyncio]==2.0.31
+asyncpg==0.29.0
 
 # Auth (validación del JWT de Supabase)
 PyJWT[crypto]==2.9.0
