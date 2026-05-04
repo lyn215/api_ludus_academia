@@ -1,24 +1,10 @@
 """app/db/session.py"""
-from sqlalchemy import event
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine, AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import get_settings
 
 settings = get_settings()
-
-
-@event.listens_for(AsyncEngine, "connect")
-def receive_connect(dbapi_conn, connection_record):
-    """
-    Asegura statement_cache_size=0 para pgbouncer en cada conexión.
-    Se ejecuta después de que asyncpg se conecta.
-    """
-    if hasattr(dbapi_conn, 'set_statement_cache_size'):
-        try:
-            dbapi_conn.set_statement_cache_size(0)
-        except Exception as e:
-            print(f"Warning: Could not set statement_cache_size: {e}")
 
 
 engine = create_async_engine(
@@ -29,7 +15,7 @@ engine = create_async_engine(
     pool_size=5,
     max_overflow=10,
     connect_args={
-        "statement_cache_size": 0,
+        "statement_cache_size": 0,  # Crítico para pgbouncer
         "timeout": 10,
     },
     # SQLAlchemy 2.0: desactiva compiled statement cache
