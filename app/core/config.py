@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = (
         "postgresql+asyncpg://postgres.bbyhevcprqxntsaknwul:Dez6XRXwOiHFHo7A"
-        "@aws-1-us-east-1.pooler.supabase.com:6543/postgres"
+        "@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
     )
 
     SUPABASE_URL: str
