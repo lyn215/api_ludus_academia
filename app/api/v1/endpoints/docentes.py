@@ -4,12 +4,11 @@ Endpoints del docente — todos requieren JWT de Supabase.
 """
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_supabase_uid, get_token_email, verify_supabase_token
-from app.db.session import get_db
+from app.db.session import get_supabase
 from app.schemas.schemas import (
     ActualizarAliasRequest,
     AnaliticaGrupoResponse,
@@ -31,18 +30,18 @@ service = DocenteService()
 
 @router.get("/perfil", response_model=MiPerfilResponse, summary="Mi perfil")
 async def mi_perfil(
-    db: Annotated[AsyncSession, Depends(get_db)],
-    supabase_uid: Annotated[str, Depends(get_supabase_uid)],
-    correo: Annotated[str, Depends(get_token_email)],
+    db=Depends(get_supabase),
+    supabase_uid: Annotated[str, Depends(get_supabase_uid)] = None,
+    correo: Annotated[str, Depends(get_token_email)] = None,
 ) -> MiPerfilResponse:
     return await service.mi_perfil(db, supabase_uid, correo)
 
 
 @router.get("/grupos", response_model=list[GrupoInfo], summary="Mis grupos")
 async def listar_grupos(
-    db: Annotated[AsyncSession, Depends(get_db)],
-    supabase_uid: Annotated[str, Depends(get_supabase_uid)],
-    correo: Annotated[str, Depends(get_token_email)],
+    db=Depends(get_supabase),
+    supabase_uid: Annotated[str, Depends(get_supabase_uid)] = None,
+    correo: Annotated[str, Depends(get_token_email)] = None,
 ) -> list[GrupoInfo]:
     return await service.listar_mis_grupos(db, supabase_uid, correo)
 
@@ -55,9 +54,9 @@ async def listar_grupos(
 )
 async def crear_grupo(
     payload: CrearGrupoRequest,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    supabase_uid: Annotated[str, Depends(get_supabase_uid)],
-    correo: Annotated[str, Depends(get_token_email)],
+    db=Depends(get_supabase),
+    supabase_uid: Annotated[str, Depends(get_supabase_uid)] = None,
+    correo: Annotated[str, Depends(get_token_email)] = None,
 ) -> GrupoInfo:
     return await service.crear_grupo(db, supabase_uid, correo, payload)
 
@@ -65,18 +64,15 @@ async def crear_grupo(
 @router.patch(
     "/alumnos/{uuid_estudiante}/alias",
     summary="Actualizar alias del alumno",
-    description="Permite al docente corregir el nombre visible de un alumno.",
 )
 async def actualizar_alias(
     uuid_estudiante: str,
     payload: ActualizarAliasRequest,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    supabase_uid: Annotated[str, Depends(get_supabase_uid)],
-    correo: Annotated[str, Depends(get_token_email)],
+    db=Depends(get_supabase),
+    supabase_uid: Annotated[str, Depends(get_supabase_uid)] = None,
+    correo: Annotated[str, Depends(get_token_email)] = None,
 ) -> dict:
-    return await service.actualizar_alias(
-        db, supabase_uid, correo, uuid_estudiante, payload.alias
-    )
+    return await service.actualizar_alias(db, supabase_uid, correo, uuid_estudiante, payload.alias)
 
 
 @router.post(
@@ -87,9 +83,9 @@ async def actualizar_alias(
 )
 async def generar_codigo(
     payload: GenerarCodigoRequest,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    supabase_uid: Annotated[str, Depends(get_supabase_uid)],
-    correo: Annotated[str, Depends(get_token_email)],
+    db=Depends(get_supabase),
+    supabase_uid: Annotated[str, Depends(get_supabase_uid)] = None,
+    correo: Annotated[str, Depends(get_token_email)] = None,
 ) -> GenerarCodigoResponse:
     return await service.generar_codigo(db, supabase_uid, correo, payload)
 
@@ -101,9 +97,9 @@ async def generar_codigo(
 )
 async def analitica_grupo(
     id_grupo: int,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    supabase_uid: Annotated[str, Depends(get_supabase_uid)],
-    correo: Annotated[str, Depends(get_token_email)],
+    db=Depends(get_supabase),
+    supabase_uid: Annotated[str, Depends(get_supabase_uid)] = None,
+    correo: Annotated[str, Depends(get_token_email)] = None,
     metrica: Literal["errores", "progreso"] | None = Query(None),
 ) -> AnaliticaGrupoResponse:
     return await service.analitica_grupo(db, supabase_uid, correo, id_grupo, metrica)
@@ -117,23 +113,22 @@ async def analitica_grupo(
 )
 async def reporte_pdf(
     uuid_estudiante: str,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    supabase_uid: Annotated[str, Depends(get_supabase_uid)],
-    correo: Annotated[str, Depends(get_token_email)],
+    db=Depends(get_supabase),
+    supabase_uid: Annotated[str, Depends(get_supabase_uid)] = None,
+    correo: Annotated[str, Depends(get_token_email)] = None,
 ):
-    from fastapi import HTTPException
-    from app.db.models import Estudiante, Grupo
     from app.services.reporte_service import ReporteService
 
     docente = await service.obtener_o_crear_docente(db, supabase_uid, correo)
-    estudiante = await db.get(Estudiante, uuid_estudiante)
-    if not estudiante:
+    rows = await db.query("estudiantes", filters={"uuid_estudiante": uuid_estudiante})
+    if not rows:
         raise HTTPException(status_code=404, detail="Alumno no encontrado.")
-    grupo = await db.get(Grupo, estudiante.id_grupo)
-    if not grupo or grupo.id_docente != docente.id:
+    estudiante = rows[0]
+    grupos = await db.query("grupos", filters={"id": estudiante["id_grupo"]})
+    if not grupos or grupos[0]["id_docente"] != docente["id"]:
         raise HTTPException(status_code=403, detail="No tienes acceso a este alumno.")
-    pdf_bytes = await ReporteService().generar_pdf(db, estudiante, grupo.nombre_grupo)
-    alias = estudiante.alias_estudiante or uuid_estudiante[:8]
+    pdf_bytes = await ReporteService().generar_pdf(db, estudiante, grupos[0]["nombre_grupo"])
+    alias = estudiante.get("alias_estudiante") or uuid_estudiante[:8]
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",

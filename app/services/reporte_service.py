@@ -14,11 +14,8 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Estudiante, EventoAprendizaje
-from app.services.docente_service import _MISION_REAL, _id_a_nivel
+from app.services.docente_service import _id_a_nivel, _is_mision_real
 
 # ── Constantes pedagógicas ─────────────────────────────────────────────────
 
@@ -87,56 +84,42 @@ def _observacion_general(misiones: int) -> str:
 
 class ReporteService:
 
-    async def generar_pdf(
-        self, db: AsyncSession, estudiante: Estudiante, nombre_grupo: str
-    ) -> bytes:
-        uid = estudiante.uuid_estudiante
+    async def generar_pdf(self, db, estudiante: dict, nombre_grupo: str) -> bytes:
+        uid = estudiante["uuid_estudiante"]
 
-        # Misiones reales: count + promedio errores (excluye eventos técnicos)
-        stats = await db.execute(
-            select(
-                func.count(EventoAprendizaje.id_evento).label("total"),
-                func.coalesce(func.avg(EventoAprendizaje.errores), 0.0).label("prom_errores"),
-            ).where(
-                EventoAprendizaje.uuid_estudiante == uid,
-                _MISION_REAL,
-            )
-        )
-        row = stats.one()
-        misiones = row.total or 0
-        prom_errores = round(float(row.prom_errores), 2)
+        all_events = await db.query("eventos_aprendizaje", filters={"uuid_estudiante": uid})
+        real_events = [e for e in all_events if _is_mision_real(e["id_mision"])]
 
-        # Última actividad por fecha_dispositivo (todos los eventos)
-        ultima_actividad = await db.scalar(
-            select(func.max(EventoAprendizaje.fecha_dispositivo))
-            .where(EventoAprendizaje.uuid_estudiante == uid)
+        misiones = len(real_events)
+        prom_errores = (
+            round(sum(e.get("errores") or 0 for e in real_events) / misiones, 2)
+            if misiones > 0 else 0.0
         )
 
-        # Desglose de errores por nivel temático
-        desglose = await db.execute(
-            select(
-                EventoAprendizaje.id_mision,
-                func.coalesce(func.avg(EventoAprendizaje.errores), 0.0).label("prom"),
+        ultima_actividad = None
+        if all_events:
+            raw = max(
+                (e["fecha_dispositivo"] for e in all_events if e.get("fecha_dispositivo")),
+                default=None,
             )
-            .where(
-                EventoAprendizaje.uuid_estudiante == uid,
-                _MISION_REAL,
-            )
-            .group_by(EventoAprendizaje.id_mision)
-        )
+            if raw:
+                ultima_actividad = (
+                    datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                    if isinstance(raw, str) else raw
+                )
+
         acum: dict[str, list[float]] = {}
-        for fila in desglose.all():
-            nivel = _id_a_nivel(fila.id_mision)
-            if nivel == "otro":
-                continue
-            acum.setdefault(nivel, []).append(float(fila.prom))
+        for e in real_events:
+            nivel = _id_a_nivel(e["id_mision"])
+            if nivel != "otro":
+                acum.setdefault(nivel, []).append(float(e.get("errores") or 0))
         errores_por_nivel = {
             nivel: round(sum(vals) / len(vals), 2)
             for nivel, vals in acum.items()
         }
 
         # ── Alias y fechas ─────────────────────────────────────────────────
-        alias = estudiante.alias_estudiante or uid[:8]
+        alias = estudiante.get("alias_estudiante") or uid[:8]
         fecha_generacion = datetime.now(timezone.utc).strftime("%d/%m/%Y")
         ua_str = (
             ultima_actividad.strftime("%d/%m/%Y %H:%M")
@@ -217,7 +200,7 @@ class ReporteService:
             [
                 ["Misiones completadas", f"{misiones} de 6"],
                 ["Promedio general errores", f"{prom_errores:.2f}"],
-                ["Monedas recolectadas", str(estudiante.monedas_totales)],
+                ["Monedas recolectadas", str(estudiante.get("monedas_totales", 0))],
                 ["Nivel de avance", _nivel_avance(misiones)],
             ],
             colWidths=[2.2 * inch, 4.0 * inch],

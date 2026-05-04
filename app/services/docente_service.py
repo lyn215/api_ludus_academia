@@ -1,11 +1,9 @@
 """app/services/docente_service.py"""
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException, status
 
 from app.core.config import get_settings
-from app.db.models import CodigoVinculacion, Docente, Estudiante, EventoAprendizaje, Grupo
 from app.schemas.schemas import (
     AnaliticaGrupoResponse,
     CrearGrupoRequest,
@@ -21,10 +19,9 @@ settings = get_settings()
 
 _FALLBACK_DT = datetime(2000, 1, 1, tzinfo=timezone.utc)
 
-_MISION_REAL = or_(
-    EventoAprendizaje.id_mision.like("nivel_%"),
-    EventoAprendizaje.id_mision.like("L%"),
-)
+
+def _is_mision_real(id_mision: str) -> bool:
+    return id_mision.startswith("nivel_") or id_mision.startswith("L")
 
 
 def _id_a_nivel(id_mision: str) -> str:
@@ -39,194 +36,146 @@ class DocenteService:
 
     # ── Auto-provisioning ──────────────────────────────────────────────────
 
-    async def obtener_o_crear_docente(
-        self,
-        db: AsyncSession,
-        supabase_uid: str,
-        correo: str = "",
-    ) -> Docente:
-        result = await db.execute(
-            select(Docente).where(Docente.supabase_uid == supabase_uid)
-        )
-        docente = result.scalar_one_or_none()
-        if not docente:
-            docente = Docente(
-                supabase_uid=supabase_uid,
-                correo=correo or f"{supabase_uid[:8]}@supabase.local",
-            )
-            db.add(docente)
-            await db.flush()
-        return docente
+    async def obtener_o_crear_docente(self, db, supabase_uid: str, correo: str = "") -> dict:
+        rows = await db.query("docentes", filters={"supabase_uid": supabase_uid})
+        if rows:
+            return rows[0]
+        return await db.insert("docentes", {
+            "supabase_uid": supabase_uid,
+            "correo": correo or f"{supabase_uid[:8]}@supabase.local",
+        })
 
     # ── Perfil y grupos ─────────────────────────────────────────────────────
 
-    async def mi_perfil(
-        self, db: AsyncSession, supabase_uid: str, correo: str
-    ) -> MiPerfilResponse:
+    async def mi_perfil(self, db, supabase_uid: str, correo: str) -> MiPerfilResponse:
         docente = await self.obtener_o_crear_docente(db, supabase_uid, correo)
-        grupos = await self._grupos_con_conteo(db, docente.id)
+        grupos = await self._grupos_con_conteo(db, docente["id"])
         return MiPerfilResponse(
-            id=docente.id,
-            correo=docente.correo,
-            nombre_completo=docente.nombre_completo,
-            fecha_registro=docente.fecha_registro,
+            id=docente["id"],
+            correo=docente["correo"],
+            nombre_completo=docente.get("nombre_completo"),
+            fecha_registro=docente.get("fecha_registro"),
             grupos=grupos,
             tiene_grupos=len(grupos) > 0,
         )
 
-    async def listar_mis_grupos(
-        self, db: AsyncSession, supabase_uid: str, correo: str
-    ) -> list[GrupoInfo]:
+    async def listar_mis_grupos(self, db, supabase_uid: str, correo: str) -> list[GrupoInfo]:
         docente = await self.obtener_o_crear_docente(db, supabase_uid, correo)
-        return await self._grupos_con_conteo(db, docente.id)
+        return await self._grupos_con_conteo(db, docente["id"])
 
     async def crear_grupo(
-        self,
-        db: AsyncSession,
-        supabase_uid: str,
-        correo: str,
-        payload: CrearGrupoRequest,
+        self, db, supabase_uid: str, correo: str, payload: CrearGrupoRequest
     ) -> GrupoInfo:
         docente = await self.obtener_o_crear_docente(db, supabase_uid, correo)
-        nuevo_grupo = Grupo(
-            id_docente=docente.id,
-            nombre_grupo=payload.nombre_grupo,
-            nombre_escuela=payload.nombre_escuela,
-        )
-        db.add(nuevo_grupo)
-        await db.flush()
+        nuevo = await db.insert("grupos", {
+            "id_docente": docente["id"],
+            "nombre_grupo": payload.nombre_grupo,
+            "nombre_escuela": payload.nombre_escuela,
+        })
         return GrupoInfo(
-            id_grupo=nuevo_grupo.id,
-            nombre_grupo=nuevo_grupo.nombre_grupo,
-            nombre_escuela=nuevo_grupo.nombre_escuela,
+            id_grupo=nuevo["id"],
+            nombre_grupo=nuevo["nombre_grupo"],
+            nombre_escuela=nuevo.get("nombre_escuela"),
             total_alumnos=0,
         )
 
     # ── Alias del alumno ─────────────────────────────────────────────────────
 
     async def actualizar_alias(
-        self,
-        db: AsyncSession,
-        supabase_uid: str,
-        correo: str,
-        uuid_estudiante: str,
-        alias: str,
+        self, db, supabase_uid: str, correo: str, uuid_estudiante: str, alias: str
     ) -> dict:
         docente = await self.obtener_o_crear_docente(db, supabase_uid, correo)
-        estudiante = await db.get(Estudiante, uuid_estudiante)
-        if not estudiante:
-            from fastapi import HTTPException, status
+        rows = await db.query("estudiantes", filters={"uuid_estudiante": uuid_estudiante})
+        if not rows:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Alumno no encontrado o sin permisos.")
-        grupo = await db.get(Grupo, estudiante.id_grupo)
-        if not grupo or grupo.id_docente != docente.id:
-            from fastapi import HTTPException, status
+        grupos = await db.query("grupos", filters={"id": rows[0]["id_grupo"]})
+        if not grupos or grupos[0]["id_docente"] != docente["id"]:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Alumno no encontrado o sin permisos.")
-        estudiante.alias_estudiante = alias.strip()
-        return {"uuid": uuid_estudiante, "alias": estudiante.alias_estudiante}
+        alias_clean = alias.strip()
+        await db.update("estudiantes", {"alias_estudiante": alias_clean},
+                        {"uuid_estudiante": uuid_estudiante})
+        return {"uuid": uuid_estudiante, "alias": alias_clean}
 
     # ── Códigos de vinculación ────────────────────────────────────────────────
 
     async def generar_codigo(
-        self,
-        db: AsyncSession,
-        supabase_uid: str,
-        correo: str,
-        payload: GenerarCodigoRequest,
+        self, db, supabase_uid: str, correo: str, payload: GenerarCodigoRequest
     ) -> GenerarCodigoResponse:
         docente = await self.obtener_o_crear_docente(db, supabase_uid, correo)
-        grupo = await db.get(Grupo, payload.id_grupo)
-        if not grupo or grupo.id_docente != docente.id:
-            from fastapi import HTTPException, status
+        grupos = await db.query("grupos", filters={"id": payload.id_grupo})
+        if not grupos or grupos[0]["id_docente"] != docente["id"]:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="No tienes permisos para generar códigos en este grupo.")
         expira = datetime.now(timezone.utc) + timedelta(hours=payload.horas_validez)
+        codigo_str = ""
         for _ in range(10):
             codigo_str = generar_codigo_ludu()
-            if not await db.get(CodigoVinculacion, codigo_str):
+            if not await db.query("codigos_vinculacion", filters={"codigo": codigo_str}):
                 break
-        db.add(CodigoVinculacion(
-            codigo=codigo_str,
-            id_grupo=payload.id_grupo,
-            expira_el=expira,
-            esta_usado=False,
-        ))
+        await db.insert("codigos_vinculacion", {
+            "codigo": codigo_str,
+            "id_grupo": payload.id_grupo,
+            "expira_el": expira.isoformat(),
+            "esta_usado": False,
+        })
         return GenerarCodigoResponse(codigo_vinculacion=codigo_str, expira_el=expira)
 
-    # ── Analítica ───────────────────────────────────────────────────────────────────────
+    # ── Analítica ─────────────────────────────────────────────────────────────
 
     async def analitica_grupo(
-        self,
-        db: AsyncSession,
-        supabase_uid: str,
-        correo: str,
-        id_grupo: int,
-        metrica: str | None,
+        self, db, supabase_uid: str, correo: str, id_grupo: int, metrica: str | None
     ) -> AnaliticaGrupoResponse:
         docente = await self.obtener_o_crear_docente(db, supabase_uid, correo)
-        grupo = await db.get(Grupo, id_grupo)
-        if not grupo or grupo.id_docente != docente.id:
-            from fastapi import HTTPException, status
+        grupos = await db.query("grupos", filters={"id": id_grupo})
+        if not grupos or grupos[0]["id_docente"] != docente["id"]:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="No tienes permisos para consultar este grupo.")
+        grupo = grupos[0]
 
-        result = await db.execute(
-            select(Estudiante).where(Estudiante.id_grupo == id_grupo)
-        )
-        alumnos = result.scalars().all()
-
+        alumnos = await db.query("estudiantes", filters={"id_grupo": id_grupo})
         metricas = []
+
         for alumno in alumnos:
-            uid = alumno.uuid_estudiante
+            uid = alumno["uuid_estudiante"]
+            all_events = await db.query("eventos_aprendizaje", filters={"uuid_estudiante": uid})
+            real_events = [e for e in all_events if _is_mision_real(e["id_mision"])]
 
-            # Misiones reales: count + promedio errores
-            stats = await db.execute(
-                select(
-                    func.count(EventoAprendizaje.id_evento).label("total_misiones"),
-                    func.coalesce(func.avg(EventoAprendizaje.errores), 0.0).label("prom_errores"),
-                ).where(
-                    EventoAprendizaje.uuid_estudiante == uid,
-                    _MISION_REAL,
-                )
-            )
-            row = stats.one()
-
-            # Última actividad: todos los eventos
-            ultima_actividad = await db.scalar(
-                select(func.max(EventoAprendizaje.fecha_dispositivo))
-                .where(EventoAprendizaje.uuid_estudiante == uid)
+            total_misiones = len(real_events)
+            prom_errores = (
+                round(sum(e.get("errores") or 0 for e in real_events) / total_misiones, 2)
+                if total_misiones > 0 else 0.0
             )
 
-            # Desglose de errores por nivel temático
-            desglose = await db.execute(
-                select(
-                    EventoAprendizaje.id_mision,
-                    func.coalesce(func.avg(EventoAprendizaje.errores), 0.0).label("prom"),
+            ultima_actividad = None
+            if all_events:
+                raw = max(
+                    (e["fecha_dispositivo"] for e in all_events if e.get("fecha_dispositivo")),
+                    default=None,
                 )
-                .where(
-                    EventoAprendizaje.uuid_estudiante == uid,
-                    _MISION_REAL,
-                )
-                .group_by(EventoAprendizaje.id_mision)
-            )
+                if raw:
+                    ultima_actividad = (
+                        datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                        if isinstance(raw, str) else raw
+                    )
+
             acum: dict[str, list[float]] = {}
-            for fila in desglose.all():
-                nivel = _id_a_nivel(fila.id_mision)
-                if nivel == "otro":
-                    continue
-                acum.setdefault(nivel, []).append(float(fila.prom))
+            for e in real_events:
+                nivel = _id_a_nivel(e["id_mision"])
+                if nivel != "otro":
+                    acum.setdefault(nivel, []).append(float(e.get("errores") or 0))
             errores_por_nivel = {
                 nivel: round(sum(vals) / len(vals), 2)
                 for nivel, vals in acum.items()
             }
 
             metricas.append(MetricaAlumno(
-                alias_alumno=alumno.alias_estudiante or uid[:8],
+                alias_alumno=alumno.get("alias_estudiante") or uid[:8],
                 uuid_estudiante=uid,
-                misiones_completas=row.total_misiones or 0,
-                promedio_errores=round(float(row.prom_errores), 2),
-                monedas_totales=alumno.monedas_totales,
+                misiones_completas=total_misiones,
+                promedio_errores=prom_errores,
+                monedas_totales=alumno.get("monedas_totales", 0),
                 ultima_actividad=ultima_actividad or _FALLBACK_DT,
                 errores_por_nivel=errores_por_nivel,
             ))
@@ -238,31 +187,23 @@ class DocenteService:
 
         return AnaliticaGrupoResponse(
             id_grupo=id_grupo,
-            nombre_grupo=grupo.nombre_grupo,
+            nombre_grupo=grupo["nombre_grupo"],
             total_alumnos=len(metricas),
             metricas=metricas,
             generado_el=datetime.now(timezone.utc),
         )
 
-    # ── Helper privado ──────────────────────────────────────────────────────────────
+    # ── Helper privado ────────────────────────────────────────────────────────
 
-    async def _grupos_con_conteo(
-        self, db: AsyncSession, id_docente: int
-    ) -> list[GrupoInfo]:
-        result = await db.execute(
-            select(Grupo).where(Grupo.id_docente == id_docente)
-        )
-        grupos = result.scalars().all()
-        respuesta = []
+    async def _grupos_con_conteo(self, db, id_docente: int) -> list[GrupoInfo]:
+        grupos = await db.query("grupos", filters={"id_docente": id_docente})
+        result = []
         for grupo in grupos:
-            total = await db.scalar(
-                select(func.count(Estudiante.uuid_estudiante))
-                .where(Estudiante.id_grupo == grupo.id)
-            ) or 0
-            respuesta.append(GrupoInfo(
-                id_grupo=grupo.id,
-                nombre_grupo=grupo.nombre_grupo,
-                nombre_escuela=grupo.nombre_escuela,
-                total_alumnos=total,
+            estudiantes = await db.query("estudiantes", filters={"id_grupo": grupo["id"]})
+            result.append(GrupoInfo(
+                id_grupo=grupo["id"],
+                nombre_grupo=grupo["nombre_grupo"],
+                nombre_escuela=grupo.get("nombre_escuela"),
+                total_alumnos=len(estudiantes),
             ))
-        return respuesta
+        return result

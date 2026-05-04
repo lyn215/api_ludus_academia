@@ -5,13 +5,10 @@ Endpoints del alumno — públicos (no requieren JWT).
 POST /estudiantes/vincular    — une el dispositivo a un grupo
 POST /estudiantes/sincronizar — volcado de eventos offline
 """
-from typing import Annotated
-
 from fastapi import APIRouter, Depends, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.db.session import get_db
+from app.db.session import get_supabase
 from app.schemas.schemas import (
     SincronizarRequest,
     SincronizarResponse,
@@ -49,7 +46,7 @@ async def _check_size(request: Request):
 )
 async def vincular_dispositivo(
     payload: VincularRequest,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db=Depends(get_supabase),
 ) -> VincularResponse:
     return await service.vincular(db, payload)
 
@@ -67,6 +64,6 @@ async def vincular_dispositivo(
 )
 async def sincronizar_progreso(
     payload: SincronizarRequest,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db=Depends(get_supabase),
 ) -> SincronizarResponse:
     return await service.sincronizar(db, payload)
