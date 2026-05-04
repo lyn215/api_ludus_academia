@@ -1,24 +1,27 @@
 """app/db/session.py"""
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 
 settings = get_settings()
 
+# NullPool: SQLAlchemy no mantiene pool propio — pgbouncer hace el pooling.
+# statement_cache_size=0: deshabilita prepared statements en asyncpg,
+# requerido cuando el backend es pgbouncer en transaction mode.
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.APP_ENV == "development",
     future=True,
+    poolclass=NullPool,
     connect_args={
+        "statement_cache_size": 0,
         "server_settings": {
             "jit": "off",
             "application_name": "ludusacademia",
-        }
+        },
     },
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
 )
 
 AsyncSessionLocal = async_sessionmaker(
