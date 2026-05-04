@@ -10,10 +10,8 @@ class Settings(BaseSettings):
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
 
-    DATABASE_URL: str = (
-        "postgresql+asyncpg://postgres.bbyhevcprqxntsaknwul:Dez6XRXwOiHFHo7A"
-        "@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
-    )
+    # En producción (Render), se debe pasar como variable de entorno
+    DATABASE_URL: str
 
     SUPABASE_URL: str
     SUPABASE_JWT_SECRET: str
