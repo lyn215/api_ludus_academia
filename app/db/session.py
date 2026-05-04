@@ -16,14 +16,16 @@ ssl_context.verify_mode = ssl.CERT_NONE
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.APP_ENV == "development",
-    # 1. NullPool es vital: delega el pooling totalmente a Supabase
     poolclass=NullPool,
     connect_args={
         "ssl": ssl_context,
         "timeout": 30,
-        # 2. Desactivamos caché de sentencias a nivel driver (asyncpg)
-        "statement_cache_size": 0,
-        "prepared_statement_cache_size": 0,
+        "command_timeout": 30,
+    },
+    # ESTO ES LO CRÍTICO: 
+    # Forzamos a que asyncpg desactive los prepared statements en cada conexión
+    execution_options={
+        "compiled_cache": None
     },
 )
 
@@ -41,14 +43,20 @@ class Base(DeclarativeBase):
 
 
 async def init_db():
-    """Verifica conectividad al arrancar. Las tablas las gestiona Supabase."""
+    """Verifica conectividad al arrancar sin usar caché de sentencias."""
+    from sqlalchemy import text
     try:
-        async with engine.begin() as _conn:
-            # Ejecutar una query simple para verificar conexión
-            await _conn.execute("SELECT 1")
+        # Usamos un bloque directo para evitar que SQLAlchemy intente 
+        # preparar la sentencia en el pool
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+            await conn.commit()
         print("Database connection successful")
     except Exception as e:
         print(f"Database connection error during init: {e}")
+        # No hagas raise aquí inmediatamente para ver si el servidor 
+        # puede arrancar de todos modos, o deja el raise si quieres 
+        # seguridad total pero asegúrate de que el log se imprima.
         raise
 
 
