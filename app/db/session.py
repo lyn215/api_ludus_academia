@@ -17,14 +17,15 @@ engine = create_async_engine(
     pool_timeout=30,
     pool_recycle=3600,  # Reciclar conexiones cada hora
     connect_args={
-        "statement_cache_size": 0,  # Crítico para pgbouncer
+        "statement_cache_size": 0,
         "timeout": 15,
         "server_settings": {
-            "jit": "off",  # Desactivar JIT para mejor compatibilidad
+            "jit": "off",
         },
+        "ssl": True,  # <--- Añade esto para Supabase
     },
-    # SQLAlchemy 2.0: desactiva compiled statement cache
     execution_options={"compiled_cache": None},
+    # SQLAlchemy 2.0: desactiva compiled statement cache
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -50,17 +51,6 @@ async def init_db():
     except Exception as e:
         print(f"Database connection error during init: {e}")
         raise
-
-
-async def get_db() -> AsyncSession:
-    """Dependencia FastAPI: inyecta una sesión por request."""
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
 
 
 async def get_db() -> AsyncSession:

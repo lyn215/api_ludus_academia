@@ -26,27 +26,35 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def ensure_supabase_pooler_config(cls, v: str) -> str:
-        """
-        Asegura configuración correcta para Supabase pooler (pgbouncer).
-        - Puerto 6543 para pooler
-        - statement_cache_size=0 para evitar prepared statements
-        """
-        if not v or "pooler.supabase.com" not in v:
-            # Si no es pooler, convertir a pooler
-            if "supabase.com" in v and "pooler" not in v:
-                v = v.replace("supabase.com", "pooler.supabase.com")
-                # Cambiar puerto a 6543 si no lo es
-                if ":5432/" in v:
-                    v = v.replace(":5432/", ":6543/")
+        if not v:
+            return v
+            
+        # 1. Asegurar que use el driver asíncrono correcto
+        if v.startswith("postgresql://"):
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
         
-        # Asegurar statement_cache_size=0 para pgbouncer
-        if "?" in v:
-            # Ya tiene query params, agregar si no existe
-            if "statement_cache_size" not in v:
-                v += "&statement_cache_size=0"
-        else:
-            # No tiene query params, agregar
-            v += "?statement_cache_size=0"
+        # 2. Parsear la URL para manipularla de forma segura
+        parsed = urlparse(v)
+        query_params = parse_qs(parsed.query)
+        
+        # 3. ELIMINAR parámetros que rompen asyncpg (el culpable del error)
+        query_params.pop("sslmode", None) 
+        
+        # 4. Asegurar configuración para el Pooler de Supabase
+        # Forzar puerto y host de pooler si es necesario
+        new_netloc = parsed.netloc
+        if "supabase.com" in new_netloc and "pooler" not in new_netloc:
+            new_netloc = new_netloc.replace("supabase.com", "pooler.supabase.com")
+        
+        if ":5432" in new_netloc:
+            new_netloc = new_netloc.replace(":5432", ":6543")
+            
+        # 5. Parámetros críticos para estabilidad
+        query_params["statement_cache_size"] = ["0"]
+        
+        # Reconstruir la URL limpia
+        new_query = urlencode(query_params, doseq=True)
+        v = urlunparse(parsed._replace(netloc=new_netloc, query=new_query))
         
         return v
 
