@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     APP_PORT: int = 8000
 
     DATABASE_URL: str = (
-        "postgresql+asyncpg://postgres:Dez6XRXwOiHFHo7A"
-        "@db.bbyhevcprqxntsaknwul.supabase.co:5432/postgres"
+        "postgresql+asyncpg://postgres.bbyhevcprqxntsaknwul:Dez6XRXwOiHFHo7A"
+        "@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
     )
 
     SUPABASE_URL: str
