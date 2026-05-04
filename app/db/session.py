@@ -1,13 +1,6 @@
-"""
-app/db/session.py
-Motor SQLite asíncrono con aiosqlite.
-
-WAL mode activo: permite lecturas concurrentes durante escrituras.
-check_same_thread=False: necesario para FastAPI async con SQLite.
-"""
+"""app/db/session.py"""
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import text
 
 from app.core.config import get_settings
 
@@ -16,7 +9,7 @@ settings = get_settings()
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.APP_ENV == "development",
-    connect_args={"check_same_thread": False},
+    future=True,
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -33,11 +26,9 @@ class Base(DeclarativeBase):
 
 
 async def init_db():
-    """Crea tablas y activa WAL mode. Se llama una vez al arrancar."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        await conn.execute(text("PRAGMA journal_mode=WAL"))
-        await conn.execute(text("PRAGMA foreign_keys=ON"))
+    """Verifica conectividad al arrancar. Las tablas las gestiona Supabase."""
+    async with engine.begin() as _conn:
+        pass
 
 
 async def get_db() -> AsyncSession:

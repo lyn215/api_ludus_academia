@@ -10,7 +10,10 @@ class Settings(BaseSettings):
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
 
-    DATABASE_PATH: str = "./ludusacademia.db"
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:Dez6XRXwOiHFHo7A"
+        "@db.bbyhevcprqxntsaknwul.supabase.co:5432/postgres"
+    )
 
     SUPABASE_URL: str
     SUPABASE_JWT_SECRET: str
@@ -31,10 +34,6 @@ class Settings(BaseSettings):
                 return json.loads(v)
             return [o.strip() for o in v.split(",") if o.strip()]
         return v
-
-    @property
-    def DATABASE_URL(self) -> str:
-        return f"sqlite+aiosqlite:///{self.DATABASE_PATH}"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
