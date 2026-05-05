@@ -89,7 +89,7 @@ class GenerarCodigoRequest(BaseModel):
 
 class GenerarCodigoResponse(BaseModel):
     codigo_vinculacion: str
-    expira_el: datetime
+    expires_at: datetime
 
 
 # ── Analítica de grupo ──────────────────────────────────────────────────────

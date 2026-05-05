@@ -106,11 +106,12 @@ class DocenteService:
                 break
         await db.insert("codigos_vinculacion", {
             "codigo": codigo_str,
-            "id_grupo": payload.id_grupo,
-            "expira_el": expira.isoformat(),
-            "esta_usado": False,
+            "grupo_id": payload.id_grupo,
+            "expires_at": expira.isoformat(),
+            "activo": True,
+            "docente_id": supabase_uid,
         })
-        return GenerarCodigoResponse(codigo_vinculacion=codigo_str, expira_el=expira)
+        return GenerarCodigoResponse(codigo_vinculacion=codigo_str, expires_at=expira)
 
     # ── Analítica ─────────────────────────────────────────────────────────────
 
