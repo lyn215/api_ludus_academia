@@ -43,13 +43,23 @@ class SupabaseDirectClient:
         rows = await self.query(table, select=select, filters={pk_col: pk_val})
         return rows[0] if rows else None
 
-    async def insert(self, table: str, data: dict) -> dict:
-        url = f"{self.url}/rest/v1/{table}"
+    async def insert(self, table: str, data: dict):
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, headers=self.headers, json=data)
+            endpoint = f"{self.url}/rest/v1/{table}"
+            # 'return=minimal' evita que Supabase devuelva todo el objeto insertado, ahorrando ancho de banda
+            headers = {**self.headers, "Prefer": "return=minimal"}
+            response = await client.post(endpoint, headers=headers, json=data)
             response.raise_for_status()
-            result = response.json()
-            return result[0] if isinstance(result, list) else result
+            return True
+
+    async def delete(self, table: str, match: dict):
+        async with httpx.AsyncClient() as client:
+            # PostgREST usa la sintaxis ?columna=eq.valor para filtrar
+            query_params = "&".join([f"{k}=eq.{v}" for k, v in match.items()])
+            endpoint = f"{self.url}/rest/v1/{table}?{query_params}"
+            response = await client.delete(endpoint, headers=self.headers)
+            response.raise_for_status()
+            return True
 
     async def update(self, table: str, data: dict, filters: dict) -> list:
         params = "&".join(f"{k}=eq.{v}" for k, v in filters.items())

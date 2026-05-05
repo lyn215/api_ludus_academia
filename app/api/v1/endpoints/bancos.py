@@ -178,3 +178,31 @@ async def listar_preguntas_banco(
             p["opciones"] = by_pregunta.get(p["id"], [])
 
     return preguntas
+
+
+# Esquema de validación para la entrada de datos
+class AsignacionBanco(BaseModel):
+    banco_id: str
+    grupo_id: str
+
+@router.post("/asignar")
+async def asignar_banco(asignacion: AsignacionBanco, db = Depends(get_supabase)):
+    try:
+        await db.insert("banco_pregunta_asignacion", {
+            "banco_id": asignacion.banco_id,
+            "grupo_id": asignacion.grupo_id
+        })
+        return {"mensaje": "Banco asignado correctamente al grupo."}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error al asignar: {str(e)}")
+
+@router.delete("/asignar")
+async def desasignar_banco(asignacion: AsignacionBanco, db = Depends(get_supabase)):
+    try:
+        await db.delete("banco_pregunta_asignacion", {
+            "banco_id": asignacion.banco_id,
+            "grupo_id": asignacion.grupo_id
+        })
+        return {"mensaje": "Banco desasignado correctamente del grupo."}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error al desasignar: {str(e)}")
