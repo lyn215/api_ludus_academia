@@ -188,7 +188,7 @@ class AsignacionBanco(BaseModel):
 @router.post("/asignar")
 async def asignar_banco(asignacion: AsignacionBanco, db = Depends(get_supabase)):
     try:
-        await db.insert("banco_pregunta_asignacion", {
+        await db.insert("grupo_banco", {
             "banco_id": asignacion.banco_id,
             "grupo_id": asignacion.grupo_id
         })
@@ -199,7 +199,7 @@ async def asignar_banco(asignacion: AsignacionBanco, db = Depends(get_supabase))
 @router.delete("/asignar")
 async def desasignar_banco(asignacion: AsignacionBanco, db = Depends(get_supabase)):
     try:
-        await db.delete("banco_pregunta_asignacion", {
+        await db.delete("grupo_banco", {
             "banco_id": asignacion.banco_id,
             "grupo_id": asignacion.grupo_id
         })
