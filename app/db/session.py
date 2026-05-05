@@ -1,9 +1,34 @@
 """app/db/session.py"""
 import httpx
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.core.config import get_settings
 
 settings = get_settings()
+
+# SQLAlchemy setup
+Base = declarative_base()
+
+# Engine with connect_args to avoid DuplicatePreparedStatementError with PgBouncer
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=False,
+    connect_args={"prepared_statement_cache_size": 0}
+)
+
+# Session factory
+async_session = sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
+
+
+async def init_db():
+    """Crear todas las tablas en la base de datos."""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 
 class SupabaseDirectClient:

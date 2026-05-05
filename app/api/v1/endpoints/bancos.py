@@ -188,6 +188,9 @@ class AsignacionBanco(BaseModel):
 @router.post("/asignar")
 async def asignar_banco(asignacion: AsignacionBanco, db = Depends(get_supabase)):
     try:
+        # Primero eliminar cualquier banco existente para el grupo (un solo banco por grupo)
+        await db.delete("grupo_banco", {"grupo_id": asignacion.grupo_id})
+        # Luego insertar el nuevo banco
         await db.insert("grupo_banco", {
             "banco_id": asignacion.banco_id,
             "grupo_id": asignacion.grupo_id
@@ -196,12 +199,12 @@ async def asignar_banco(asignacion: AsignacionBanco, db = Depends(get_supabase))
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al asignar: {str(e)}")
 
-@router.delete("/asignar")
-async def desasignar_banco(asignacion: AsignacionBanco, db = Depends(get_supabase)):
+@router.delete("/asignar/{grupo_id}/{banco_id}")
+async def desasignar_banco(grupo_id: str, banco_id: str, db = Depends(get_supabase)):
     try:
         await db.delete("grupo_banco", {
-            "banco_id": asignacion.banco_id,
-            "grupo_id": asignacion.grupo_id
+            "banco_id": banco_id,
+            "grupo_id": grupo_id
         })
         return {"mensaje": "Banco desasignado correctamente del grupo."}
     except Exception as e:

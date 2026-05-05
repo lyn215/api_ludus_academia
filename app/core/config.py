@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     )
     SUPABASE_JWT_SECRET: str
 
+    DATABASE_URL: str = Field(default="sqlite+aiosqlite:///./ludusacademia.db")
+    DATABASE_PATH: str = Field(default="./ludusacademia.db")
+    SUPABASE_SERVICE_ROLE_KEY: str = Field(default="")
+
     MAX_SYNC_PAYLOAD_KB: int = 50
     INVITE_CODE_EXPIRY_HOURS: int = 24
 
