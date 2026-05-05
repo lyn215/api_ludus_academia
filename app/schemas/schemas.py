@@ -53,10 +53,14 @@ class CrearGrupoRequest(BaseModel):
 
 
 class GrupoInfo(BaseModel):
-    id_grupo: str
+    id: str
     nombre_grupo: str
+    docente_id: str
+    codigo_acceso: str | None = None
+    activo: bool = True
+    created_at: datetime
     nombre_escuela: str | None = None
-    total_alumnos: int = 0
+    total_estudiantes: int = 0
 
 
 # ── Perfil del docente ──────────────────────────────────────────────────

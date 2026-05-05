@@ -61,10 +61,14 @@ class DocenteService:
             data["nombre_escuela"] = payload.nombre_escuela
         nuevo = await db.insert("grupos", data)
         return GrupoInfo(
-            id_grupo=nuevo["id"],
+            id=nuevo["id"],
             nombre_grupo=nuevo["nombre_grupo"],
+            docente_id=nuevo["docente_id"],
+            codigo_acceso=nuevo.get("codigo_acceso"),
+            activo=nuevo.get("activo", True),
+            created_at=nuevo["created_at"],
             nombre_escuela=nuevo.get("nombre_escuela"),
-            total_alumnos=0,
+            total_estudiantes=0,
         )
 
     # ── Alias del alumno ─────────────────────────────────────────────────────
@@ -190,9 +194,13 @@ class DocenteService:
             except Exception:
                 count = 0
             result.append(GrupoInfo(
-                id_grupo=grupo["id"],
+                id=grupo["id"],
                 nombre_grupo=grupo["nombre_grupo"],
+                docente_id=grupo["docente_id"],
+                codigo_acceso=grupo.get("codigo_acceso"),
+                activo=grupo.get("activo", True),
+                created_at=grupo["created_at"],
                 nombre_escuela=grupo.get("nombre_escuela"),
-                total_alumnos=count,
+                total_estudiantes=count,
             ))
         return result
