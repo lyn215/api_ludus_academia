@@ -95,7 +95,7 @@ class DocenteService:
         self, db, supabase_uid: str, correo: str, payload: GenerarCodigoRequest
     ) -> GenerarCodigoResponse:
         grupos = await db.query("grupos", filters={"id": payload.id_grupo})
-        if not grupos or grupos[0]["docente_id"] != supabase_uid:
+        if not grupos or grupos[0]["id_docente"] != supabase_uid:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="No tienes permisos para generar códigos en este grupo.")
         expira = datetime.now(timezone.utc) + timedelta(hours=payload.horas_validez)
