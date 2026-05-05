@@ -49,7 +49,7 @@ class SincronizarResponse(BaseModel):
 
 class CrearGrupoRequest(BaseModel):
     nombre_grupo: str = Field(..., min_length=1, max_length=100)
-    nombre_escuela: str = Field("Escuela 5 de Mayo de 1862", max_length=200)
+    nombre_escuela: str | None = Field(None, max_length=200)
 
 
 class GrupoInfo(BaseModel):

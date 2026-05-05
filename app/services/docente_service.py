@@ -53,13 +53,17 @@ class DocenteService:
     async def crear_grupo(
         self, db, supabase_uid: str, correo: str, payload: CrearGrupoRequest
     ) -> GrupoInfo:
-        nuevo = await db.insert("grupos", {
+        data: dict = {
             "docente_id": supabase_uid,
             "nombre_grupo": payload.nombre_grupo,
-        })
+        }
+        if payload.nombre_escuela:
+            data["nombre_escuela"] = payload.nombre_escuela
+        nuevo = await db.insert("grupos", data)
         return GrupoInfo(
             id_grupo=nuevo["id"],
             nombre_grupo=nuevo["nombre_grupo"],
+            nombre_escuela=nuevo.get("nombre_escuela"),
             total_alumnos=0,
         )
 
@@ -180,10 +184,15 @@ class DocenteService:
         grupos = await db.query("grupos", filters={"docente_id": id_docente})
         result = []
         for grupo in grupos:
-            estudiantes = await db.query("estudiantes", filters={"id_grupo": grupo["id"]})
+            try:
+                estudiantes = await db.query("estudiantes", filters={"id_grupo": grupo["id"]})
+                count = len(estudiantes)
+            except Exception:
+                count = 0
             result.append(GrupoInfo(
                 id_grupo=grupo["id"],
                 nombre_grupo=grupo["nombre_grupo"],
-                total_alumnos=len(estudiantes),
+                nombre_escuela=grupo.get("nombre_escuela"),
+                total_alumnos=count,
             ))
         return result
