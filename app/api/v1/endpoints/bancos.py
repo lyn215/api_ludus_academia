@@ -1,7 +1,7 @@
 """app/api/v1/endpoints/bancos.py
 Endpoints de bancos de preguntas — usan exclusivamente Supabase HTTP.
 """
-from typing import Annotated, Optional
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -180,45 +180,41 @@ async def listar_preguntas_banco(
     return preguntas
 
 
-# Esquema de validación para la entrada de datos
-class AsignacionBanco(BaseModel):
-    banco_id: str
+class AsignarBancoRequest(BaseModel):
     grupo_id: str
+    banco_id: str
 
-@router.post("/asignar")
-async def asignar_banco(asignacion: AsignacionBanco, db = Depends(get_supabase)):
-    try:
-        # Primero eliminar cualquier banco existente para el grupo (un solo banco por grupo)
-        await db.delete("grupo_banco", {"grupo_id": asignacion.grupo_id})
-        # Luego insertar el nuevo banco
-        await db.insert("grupo_banco", {
-            "banco_id": asignacion.banco_id,
-            "grupo_id": asignacion.grupo_id
-        })
-        return {"mensaje": "Banco asignado correctamente al grupo."}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al asignar: {str(e)}")
 
-@router.delete("/asignar/{grupo_id}/{banco_id}")
-async def desasignar_banco(grupo_id: str, banco_id: str, db = Depends(get_supabase)):
-    try:
-        await db.delete("grupo_banco", {
-            "banco_id": banco_id,
-            "grupo_id": grupo_id
-        })
-        return {"mensaje": "Banco desasignado correctamente del grupo."}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al desasignar: {str(e)}")
+@router.post("/asignar", status_code=status.HTTP_201_CREATED, summary="Asignar banco a grupo")
+async def asignar_banco(
+    asignacion: AsignarBancoRequest,
+    db=Depends(get_supabase),
+) -> dict:
+    await db.delete("grupo_banco", {"grupo_id": asignacion.grupo_id})
+    result = await db.insert("grupo_banco", {
+        "grupo_id": asignacion.grupo_id,
+        "banco_id": asignacion.banco_id,
+    })
+    return result
+
+
+@router.delete(
+    "/asignar/{grupo_id}/{banco_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Desasignar banco de grupo",
+)
+async def desasignar_banco(
+    grupo_id: str,
+    banco_id: str,
+    db=Depends(get_supabase),
+) -> None:
+    await db.delete("grupo_banco", {"grupo_id": grupo_id, "banco_id": banco_id})
+
 
 @router.get("/asignados/{grupo_id}", response_model=list[str], summary="Bancos asignados a un grupo")
-async def obtener_bancos_asignados(grupo_id: str, db = Depends(get_supabase)) -> list[str]:
-    """Retorna lista de UUIDs de bancos asignados al grupo especificado."""
-    try:
-        asignaciones = await db.get_by_match(
-            "grupo_banco",
-            match={"grupo_id": grupo_id},
-            select="banco_id"
-        )
-        return [asig["banco_id"] for asig in asignaciones]
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al obtener bancos asignados: {str(e)}")
+async def obtener_bancos_asignados(
+    grupo_id: str,
+    db=Depends(get_supabase),
+) -> list[str]:
+    asignaciones = await db.get_by_match("grupo_banco", match={"grupo_id": grupo_id}, select="banco_id")
+    return [a["banco_id"] for a in asignaciones]

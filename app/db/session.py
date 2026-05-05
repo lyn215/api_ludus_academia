@@ -1,34 +1,9 @@
 """app/db/session.py"""
 import httpx
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.core.config import get_settings
 
 settings = get_settings()
-
-# SQLAlchemy setup
-Base = declarative_base()
-
-# Engine with connect_args to avoid DuplicatePreparedStatementError with PgBouncer
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=False,
-    connect_args={"prepared_statement_cache_size": 0}
-)
-
-# Session factory
-async_session = sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
-
-
-async def init_db():
-    """Crear todas las tablas en la base de datos."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
 
 
 class SupabaseDirectClient:
@@ -69,7 +44,6 @@ class SupabaseDirectClient:
         return rows[0] if rows else None
 
     async def get_by_match(self, table: str, match: dict, select: str = "*") -> list:
-        """Consulta filtrando por múltiples parámetros con coincidencia exacta (eq.)"""
         url = f"{self.url}/rest/v1/{table}?select={select}"
         for k, v in match.items():
             url += f"&{k}=eq.{v}"
@@ -78,23 +52,13 @@ class SupabaseDirectClient:
             response.raise_for_status()
             return response.json()
 
-    async def insert(self, table: str, data: dict):
+    async def insert(self, table: str, data: dict) -> dict:
+        url = f"{self.url}/rest/v1/{table}"
         async with httpx.AsyncClient() as client:
-            endpoint = f"{self.url}/rest/v1/{table}"
-            # 'return=minimal' evita que Supabase devuelva todo el objeto insertado, ahorrando ancho de banda
-            headers = {**self.headers, "Prefer": "return=minimal"}
-            response = await client.post(endpoint, headers=headers, json=data)
+            response = await client.post(url, headers=self.headers, json=data)
             response.raise_for_status()
-            return True
-
-    async def delete(self, table: str, match: dict):
-        async with httpx.AsyncClient() as client:
-            # PostgREST usa la sintaxis ?columna=eq.valor para filtrar
-            query_params = "&".join([f"{k}=eq.{v}" for k, v in match.items()])
-            endpoint = f"{self.url}/rest/v1/{table}?{query_params}"
-            response = await client.delete(endpoint, headers=self.headers)
-            response.raise_for_status()
-            return True
+            result = response.json()
+            return result[0] if isinstance(result, list) else result
 
     async def update(self, table: str, data: dict, filters: dict) -> list:
         params = "&".join(f"{k}=eq.{v}" for k, v in filters.items())
@@ -103,6 +67,13 @@ class SupabaseDirectClient:
             response = await client.patch(url, headers=self.headers, json=data)
             response.raise_for_status()
             return response.json()
+
+    async def delete(self, table: str, match: dict) -> None:
+        params = "&".join(f"{k}=eq.{v}" for k, v in match.items())
+        url = f"{self.url}/rest/v1/{table}?{params}"
+        async with httpx.AsyncClient() as client:
+            response = await client.delete(url, headers=self.headers)
+            response.raise_for_status()
 
 
 supabase_http = SupabaseDirectClient()
