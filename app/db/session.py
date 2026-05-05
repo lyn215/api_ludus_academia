@@ -68,6 +68,14 @@ class SupabaseDirectClient:
             response.raise_for_status()
             return response.json()
 
+    async def patch(self, table: str, filters: dict, payload: dict) -> list:
+        params = "&".join(f"{k}=eq.{v}" for k, v in filters.items())
+        url = f"{self.url}/rest/v1/{table}?{params}"
+        async with httpx.AsyncClient() as client:
+            response = await client.patch(url, headers=self.headers, json=payload)
+            response.raise_for_status()
+            return response.json()
+
     async def delete(self, table: str, match: dict) -> None:
         params = "&".join(f"{k}=eq.{v}" for k, v in match.items())
         url = f"{self.url}/rest/v1/{table}?{params}"

@@ -76,17 +76,21 @@ class DocenteService:
     async def actualizar_alias(
         self, db, supabase_uid: str, correo: str, uuid_estudiante: str, alias: str
     ) -> dict:
-        rows = await db.query("estudiantes", filters={"uuid_estudiante": uuid_estudiante})
+        rows = await db.query("usuarios", filters={"id": uuid_estudiante, "tipo_usuario": "alumno"})
         if not rows:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Alumno no encontrado o sin permisos.")
-        grupos = await db.query("grupos", filters={"id": rows[0]["id_grupo"]})
+        alumno = rows[0]
+        grupo_nombre = alumno.get("grupo")
+        if not grupo_nombre:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="Alumno no encontrado o sin permisos.")
+        grupos = await db.query("grupos", filters={"nombre_grupo": grupo_nombre})
         if not grupos or grupos[0]["docente_id"] != supabase_uid:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Alumno no encontrado o sin permisos.")
         alias_clean = alias.strip()
-        await db.update("estudiantes", {"alias_estudiante": alias_clean},
-                        {"uuid_estudiante": uuid_estudiante})
+        await db.patch("usuarios", {"id": uuid_estudiante}, {"nombre_completo": alias_clean})
         return {"uuid": uuid_estudiante, "alias": alias_clean}
 
     # ── Códigos de vinculación ────────────────────────────────────────────────
@@ -124,24 +128,25 @@ class DocenteService:
                                 detail="No tienes permisos para consultar este grupo.")
         grupo = grupos[0]
 
-        alumnos = await db.query("estudiantes", filters={"id_grupo": id_grupo})
+        nombre_grupo = grupo["nombre_grupo"]
+        todos_alumnos = await db.query("usuarios", filters={"tipo_usuario": "alumno"})
+        alumnos = [u for u in todos_alumnos if u.get("grupo") == nombre_grupo]
         metricas = []
 
         for alumno in alumnos:
-            uid = alumno["uuid_estudiante"]
-            all_events = await db.query("eventos_aprendizaje", filters={"uuid_estudiante": uid})
-            real_events = [e for e in all_events if _is_mision_real(e["id_mision"])]
+            uid = alumno["id"]
+            all_events = await db.query("intentos_desafios", filters={"usuario_id": uid})
 
-            total_misiones = len(real_events)
+            total_misiones = len(all_events)
+            errores_count = sum(0 if e.get("es_correcta", True) else 1 for e in all_events)
             prom_errores = (
-                round(sum(e.get("errores") or 0 for e in real_events) / total_misiones, 2)
-                if total_misiones > 0 else 0.0
+                round(errores_count / total_misiones, 2) if total_misiones > 0 else 0.0
             )
 
             ultima_actividad = None
             if all_events:
                 raw = max(
-                    (e["fecha_dispositivo"] for e in all_events if e.get("fecha_dispositivo")),
+                    (e["fecha_intento"] for e in all_events if e.get("fecha_intento")),
                     default=None,
                 )
                 if raw:
@@ -150,22 +155,19 @@ class DocenteService:
                         if isinstance(raw, str) else raw
                     )
 
-            acum: dict[str, list[float]] = {}
-            for e in real_events:
-                nivel = _id_a_nivel(e["id_mision"])
-                if nivel != "otro":
-                    acum.setdefault(nivel, []).append(float(e.get("errores") or 0))
-            errores_por_nivel = {
-                nivel: round(sum(vals) / len(vals), 2)
-                for nivel, vals in acum.items()
-            }
+            acum: dict[str, int] = {}
+            for e in all_events:
+                nodo = e.get("nodo_id") or "otro"
+                if not e.get("es_correcta", True):
+                    acum[nodo] = acum.get(nodo, 0) + 1
+            errores_por_nivel = {nodo: float(count) for nodo, count in acum.items()}
 
             metricas.append(MetricaAlumno(
-                alias_alumno=alumno.get("alias_estudiante") or uid[:8],
+                alias_alumno=alumno.get("nombre_completo") or uid[:8],
                 uuid_estudiante=uid,
                 misiones_completas=total_misiones,
                 promedio_errores=prom_errores,
-                monedas_totales=alumno.get("monedas_totales", 0),
+                monedas_totales=alumno.get("puntos_totales", 0),
                 ultima_actividad=ultima_actividad or _FALLBACK_DT,
                 errores_por_nivel=errores_por_nivel,
             ))
