@@ -58,8 +58,13 @@ class BancoDetalleOut(BancoOut):
     preguntas: list[PreguntaOut] = []
 
 
+class AsignarBancoRequest(BaseModel):
+    grupo_id: str
+    banco_id: str
+
+
 # ---------------------------------------------------------------------------
-# Endpoints
+# Endpoints — orden importa: rutas estáticas antes que rutas con parámetro
 # ---------------------------------------------------------------------------
 
 @router.get("", response_model=list[BancoOut], summary="Listar bancos activos")
@@ -88,6 +93,15 @@ async def listar_bancos(
         banco["total_preguntas"] = len(asignaciones)
 
     return bancos
+
+
+@router.get("/asignados/{grupo_id}", response_model=list[str], summary="Bancos asignados a un grupo")
+async def obtener_bancos_asignados(
+    grupo_id: str,
+    db=Depends(get_supabase),
+) -> list[str]:
+    asignaciones = await db.get_by_match("grupo_banco", match={"grupo_id": grupo_id}, select="banco_id")
+    return [a["banco_id"] for a in asignaciones]
 
 
 @router.get("/{banco_id}", response_model=BancoDetalleOut, summary="Detalle de banco con preguntas")
@@ -180,11 +194,6 @@ async def listar_preguntas_banco(
     return preguntas
 
 
-class AsignarBancoRequest(BaseModel):
-    grupo_id: str
-    banco_id: str
-
-
 @router.post("/asignar", status_code=status.HTTP_201_CREATED, summary="Asignar banco a grupo")
 async def asignar_banco(
     asignacion: AsignarBancoRequest,
@@ -209,12 +218,3 @@ async def desasignar_banco(
     db=Depends(get_supabase),
 ) -> None:
     await db.delete("grupo_banco", {"grupo_id": grupo_id, "banco_id": banco_id})
-
-
-@router.get("/asignados/{grupo_id}", response_model=list[str], summary="Bancos asignados a un grupo")
-async def obtener_bancos_asignados(
-    grupo_id: str,
-    db=Depends(get_supabase),
-) -> list[str]:
-    asignaciones = await db.get_by_match("grupo_banco", match={"grupo_id": grupo_id}, select="banco_id")
-    return [a["banco_id"] for a in asignaciones]
