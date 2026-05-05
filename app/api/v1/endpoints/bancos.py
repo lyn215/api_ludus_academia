@@ -206,3 +206,16 @@ async def desasignar_banco(asignacion: AsignacionBanco, db = Depends(get_supabas
         return {"mensaje": "Banco desasignado correctamente del grupo."}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al desasignar: {str(e)}")
+
+@router.get("/asignados/{grupo_id}", response_model=list[str], summary="Bancos asignados a un grupo")
+async def obtener_bancos_asignados(grupo_id: str, db = Depends(get_supabase)) -> list[str]:
+    """Retorna lista de UUIDs de bancos asignados al grupo especificado."""
+    try:
+        asignaciones = await db.get_by_match(
+            "grupo_banco",
+            match={"grupo_id": grupo_id},
+            select="banco_id"
+        )
+        return [asig["banco_id"] for asig in asignaciones]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error al obtener bancos asignados: {str(e)}")

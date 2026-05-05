@@ -43,6 +43,16 @@ class SupabaseDirectClient:
         rows = await self.query(table, select=select, filters={pk_col: pk_val})
         return rows[0] if rows else None
 
+    async def get_by_match(self, table: str, match: dict, select: str = "*") -> list:
+        """Consulta filtrando por múltiples parámetros con coincidencia exacta (eq.)"""
+        url = f"{self.url}/rest/v1/{table}?select={select}"
+        for k, v in match.items():
+            url += f"&{k}=eq.{v}"
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=self.headers)
+            response.raise_for_status()
+            return response.json()
+
     async def insert(self, table: str, data: dict):
         async with httpx.AsyncClient() as client:
             endpoint = f"{self.url}/rest/v1/{table}"
