@@ -81,13 +81,19 @@ class EstudianteService:
             alias = f"Alumno {len(existing) + 1}"
 
         print(f"[vincular] insertando nuevo alumno alias={alias!r} grupo={nombre_grupo!r}", flush=True)
-        await db.insert("usuarios", {
-            "id": payload.uuid_estudiante,
-            "nombre_completo": alias,
-            "tipo_usuario": "alumno",
-            "grupo": nombre_grupo,
-            "activo": True,
-        })
+        try:
+            await db.insert("usuarios", {
+                "id":              payload.uuid_estudiante,
+                "nombre_completo": alias,
+                "tipo_usuario":    "alumno",
+                "grupo":           nombre_grupo,
+                "activo":          True,
+            })
+        except Exception as e:
+            print(f"INSERT usuarios falló: {e}", flush=True)
+            if hasattr(e, "response"):
+                print(f"Response body: {e.response.text}", flush=True)
+            raise
         print("[vincular] insert completado", flush=True)
         return VincularResponse(
             mensaje="Dispositivo vinculado con éxito.",
