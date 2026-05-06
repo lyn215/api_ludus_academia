@@ -85,21 +85,21 @@ def _observacion_general(misiones: int) -> str:
 class ReporteService:
 
     async def generar_pdf(self, db, estudiante: dict, nombre_grupo: str) -> bytes:
-        uid = estudiante["uuid_estudiante"]
+        uid = estudiante["id"]
 
-        all_events = await db.query("eventos_aprendizaje", filters={"uuid_estudiante": uid})
-        real_events = [e for e in all_events if _is_mision_real(e["id_mision"])]
+        all_events = await db.query("intentos_desafios", filters={"usuario_id": uid})
+        real_events = [e for e in all_events if _is_mision_real(e["nodo_id"])]
 
-        misiones = len(real_events)
+        misiones = len(set(e["nodo_id"] for e in real_events if e.get("nodo_id")))
         prom_errores = (
-            round(sum(e.get("errores") or 0 for e in real_events) / misiones, 2)
-            if misiones > 0 else 0.0
+            round(sum(0.0 if e.get("es_correcta", True) else 1.0 for e in real_events) / len(real_events), 2)
+            if real_events else 0.0
         )
 
         ultima_actividad = None
         if all_events:
             raw = max(
-                (e["fecha_dispositivo"] for e in all_events if e.get("fecha_dispositivo")),
+                (e["fecha_intento"] for e in all_events if e.get("fecha_intento")),
                 default=None,
             )
             if raw:
@@ -110,16 +110,16 @@ class ReporteService:
 
         acum: dict[str, list[float]] = {}
         for e in real_events:
-            nivel = _id_a_nivel(e["id_mision"])
+            nivel = _id_a_nivel(e["nodo_id"])
             if nivel != "otro":
-                acum.setdefault(nivel, []).append(float(e.get("errores") or 0))
+                acum.setdefault(nivel, []).append(0.0 if e.get("es_correcta", True) else 1.0)
         errores_por_nivel = {
             nivel: round(sum(vals) / len(vals), 2)
             for nivel, vals in acum.items()
         }
 
         # ── Alias y fechas ─────────────────────────────────────────────────
-        alias = estudiante.get("alias_estudiante") or uid[:8]
+        alias = estudiante.get("nombre_completo") or uid[:8]
         fecha_generacion = datetime.now(timezone.utc).strftime("%d/%m/%Y")
         ua_str = (
             ultima_actividad.strftime("%d/%m/%Y %H:%M")
@@ -200,7 +200,7 @@ class ReporteService:
             [
                 ["Misiones completadas", f"{misiones} de 6"],
                 ["Promedio general errores", f"{prom_errores:.2f}"],
-                ["Monedas recolectadas", str(estudiante.get("monedas_totales", 0))],
+                ["Monedas recolectadas", str(estudiante.get("puntos_totales", 0))],
                 ["Nivel de avance", _nivel_avance(misiones)],
             ],
             colWidths=[2.2 * inch, 4.0 * inch],
