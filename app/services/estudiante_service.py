@@ -80,6 +80,12 @@ class EstudianteService:
                                       filters={"tipo_usuario": "alumno", "grupo": nombre_grupo})
             alias = f"Alumno {len(existing) + 1}"
 
+        try:
+            ts = int(payload.fecha_dispositivo) / 1000
+            fecha_reg = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+        except Exception:
+            fecha_reg = datetime.now(timezone.utc).isoformat()
+
         print(f"[vincular] insertando nuevo alumno alias={alias!r} grupo={nombre_grupo!r}", flush=True)
         try:
             await db.insert("usuarios", {
@@ -88,6 +94,7 @@ class EstudianteService:
                 "tipo_usuario":    "alumno",
                 "grupo":           nombre_grupo,
                 "activo":          True,
+                "fecha_registro":  fecha_reg,
             })
         except Exception as e:
             print(f"INSERT usuarios falló: {e}", flush=True)

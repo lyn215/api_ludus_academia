@@ -11,6 +11,7 @@ class VincularRequest(BaseModel):
     uuid_estudiante: str = Field(..., description="UUID generado por la app en el primer inicio")
     codigo_vinculacion: str = Field(..., min_length=6, max_length=6)
     nombre_alumno: str | None = None
+    fecha_dispositivo: str | None = None
 
     @field_validator("codigo_vinculacion")
     @classmethod
