@@ -56,6 +56,8 @@ class SupabaseDirectClient:
         url = f"{self.url}/rest/v1/{table}"
         async with httpx.AsyncClient() as client:
             response = await client.post(url, headers=self.headers, json=data)
+            if response.status_code >= 400:
+                print(f"Supabase error {response.status_code} [{table}]: {response.text}", flush=True)
             response.raise_for_status()
             result = response.json()
             return result[0] if isinstance(result, list) else result
