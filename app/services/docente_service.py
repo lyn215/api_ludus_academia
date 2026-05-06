@@ -129,8 +129,10 @@ class DocenteService:
         grupo = grupos[0]
 
         nombre_grupo = grupo["nombre_grupo"]
-        todos_alumnos = await db.query("usuarios", filters={"tipo_usuario": "alumno"})
-        alumnos = [u for u in todos_alumnos if u.get("grupo") == nombre_grupo]
+        alumnos = await db.query("usuarios", filters={
+            "tipo_usuario": "alumno",
+            "grupo_id": id_grupo,
+        })
         metricas = []
 
         for alumno in alumnos:
@@ -193,9 +195,11 @@ class DocenteService:
         result = []
         for grupo in grupos:
             try:
-                nombre_g = grupo.get("nombre_grupo", "")
-                todos = await db.query("usuarios", filters={"tipo_usuario": "alumno"})
-                count = sum(1 for u in todos if u.get("grupo") == nombre_g)
+                estudiantes = await db.query("usuarios", filters={
+                    "tipo_usuario": "alumno",
+                    "grupo_id": grupo["id"],
+                })
+                count = len(estudiantes)
             except Exception:
                 count = 0
             result.append(GrupoInfo(

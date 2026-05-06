@@ -96,6 +96,7 @@ class EstudianteService:
                 "nombre_completo": alias,
                 "tipo_usuario":    "alumno",
                 "grupo":           nombre_grupo,
+                "grupo_id":        codigo["grupo_id"],
                 "activo":          True,
                 "fecha_registro":  fecha_reg,
             })
