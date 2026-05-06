@@ -101,7 +101,7 @@ class MetricaAlumno(BaseModel):
     misiones_completas: int
     promedio_errores: float
     monedas_totales: int
-    ultima_actividad: datetime
+    ultima_actividad: datetime | None = None
     errores_por_nivel: dict[str, float] = {}
 
 

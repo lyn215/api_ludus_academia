@@ -17,7 +17,7 @@ from app.services.estudiante_service import generar_codigo_ludu
 
 settings = get_settings()
 
-_FALLBACK_DT = datetime(2000, 1, 1, tzinfo=timezone.utc)
+_FALLBACK_DT = None
 
 
 def _is_mision_real(id_mision: str) -> bool:
