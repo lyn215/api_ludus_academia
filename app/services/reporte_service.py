@@ -20,12 +20,12 @@ from app.services.docente_service import _id_a_nivel, _is_mision_real
 # ── Constantes pedagógicas ─────────────────────────────────────────────────
 
 NOMBRES_NIVEL = {
-    "nivel_0": "Tutorial — El Claro del Despertar",
-    "nivel_1": "Nivel 1 — Praderas de la Adición",
-    "nivel_2": "Nivel 2 — Minas de la Multiplicación",
-    "nivel_3": "Nivel 3 — Templo de los Triángulos",
-    "nivel_4": "Nivel 4 — Valle del Cronos",
-    "nivel_5": "Nivel 5 — Cascada de las Fracciones",
+    "nivel_0": "Nivel 0 — Exploración Inicial",
+    "nivel_1": "Nivel 1 — Primeros Pasos",
+    "nivel_2": "Nivel 2 — En Progreso",
+    "nivel_3": "Nivel 3 — Avanzando",
+    "nivel_4": "Nivel 4 — Casi Experto",
+    "nivel_5": "Nivel 5 — Maestro del Tema",
 }
 
 _VERDE = colors.HexColor("#315C4D")
@@ -84,8 +84,18 @@ def _observacion_general(misiones: int) -> str:
 
 class ReporteService:
 
-    async def generar_pdf(self, db, estudiante: dict, nombre_grupo: str) -> bytes:
+    async def generar_pdf(self, db, estudiante: dict, nombre_grupo: str, grupo_id: str) -> bytes:
         uid = estudiante["id"]
+
+        nombre_banco: str | None = None
+        try:
+            asignaciones = await db.query("grupo_banco", filters={"grupo_id": grupo_id})
+            if asignaciones:
+                bancos = await db.query("bancos_preguntas", filters={"id": asignaciones[0]["banco_id"]})
+                if bancos:
+                    nombre_banco = bancos[0].get("nombre")
+        except Exception:
+            pass
 
         all_events = await db.query("intentos_desafios", filters={"usuario_id": uid})
         real_events = [e for e in all_events if _is_mision_real(e["nodo_id"])]
@@ -181,15 +191,15 @@ class ReporteService:
         story.append(Paragraph("Reporte de Desempeño Académico Individual", subtitle_style))
         story.append(Spacer(1, 0.15 * inch))
 
-        info_table = Table(
-            [
-                ["Alumno", alias],
-                ["Grupo", nombre_grupo],
-                ["Fecha de generación", fecha_generacion],
-                ["Última actividad", ua_str],
-            ],
-            colWidths=[2.2 * inch, 4.0 * inch],
-        )
+        info_rows = [
+            ["Alumno", alias],
+            ["Grupo", nombre_grupo],
+            ["Fecha de generación", fecha_generacion],
+            ["Última actividad", ua_str],
+        ]
+        if nombre_banco:
+            info_rows.append(["Área de estudio", nombre_banco])
+        info_table = Table(info_rows, colWidths=[2.2 * inch, 4.0 * inch])
         info_table.setStyle(_header_ts)
         story.append(info_table)
 

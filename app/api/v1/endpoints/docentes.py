@@ -126,7 +126,7 @@ async def reporte_pdf(
     grupos = await db.query("grupos", filters={"id": estudiante["grupo_id"]})
     if not grupos or grupos[0]["docente_id"] != supabase_uid:
         raise HTTPException(status_code=403, detail="No tienes acceso a este alumno.")
-    pdf_bytes = await ReporteService().generar_pdf(db, estudiante, grupos[0]["nombre_grupo"])
+    pdf_bytes = await ReporteService().generar_pdf(db, estudiante, grupos[0]["nombre_grupo"], estudiante["grupo_id"])
     alias = estudiante.get("nombre_completo") or uuid_estudiante[:8]
     return Response(
         content=pdf_bytes,
