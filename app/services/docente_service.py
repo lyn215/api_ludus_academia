@@ -137,10 +137,11 @@ class DocenteService:
             uid = alumno["id"]
             all_events = await db.query("intentos_desafios", filters={"usuario_id": uid})
 
-            total_misiones = len(all_events)
-            errores_count = sum(0 if e.get("es_correcta", True) else 1 for e in all_events)
+            total_intentos = len(all_events)
+            misiones_completas = len(set(e.get("nodo_id") for e in all_events if e.get("nodo_id")))
+            errores_count = sum(1 for e in all_events if not e.get("es_correcta", True))
             prom_errores = (
-                round(errores_count / total_misiones, 2) if total_misiones > 0 else 0.0
+                round(errores_count / total_intentos, 2) if total_intentos > 0 else 0.0
             )
 
             ultima_actividad = None
@@ -165,7 +166,7 @@ class DocenteService:
             metricas.append(MetricaAlumno(
                 alias_alumno=alumno.get("nombre_completo") or uid[:8],
                 uuid_estudiante=uid,
-                misiones_completas=total_misiones,
+                misiones_completas=misiones_completas,
                 promedio_errores=prom_errores,
                 monedas_totales=alumno.get("puntos_totales", 0),
                 ultima_actividad=ultima_actividad or _FALLBACK_DT,
@@ -192,8 +193,9 @@ class DocenteService:
         result = []
         for grupo in grupos:
             try:
-                estudiantes = await db.query("estudiantes", filters={"id_grupo": grupo["id"]})
-                count = len(estudiantes)
+                nombre_g = grupo.get("nombre_grupo", "")
+                todos = await db.query("usuarios", filters={"tipo_usuario": "alumno"})
+                count = sum(1 for u in todos if u.get("grupo") == nombre_g)
             except Exception:
                 count = 0
             result.append(GrupoInfo(
