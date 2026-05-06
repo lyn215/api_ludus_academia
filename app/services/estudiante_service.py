@@ -86,6 +86,9 @@ class EstudianteService:
         except Exception:
             fecha_reg = datetime.now(timezone.utc).isoformat()
 
+        print(f"[vincular] fecha_dispositivo raw: {payload.fecha_dispositivo!r}", flush=True)
+        print(f"[vincular] fecha_reg calculada: {fecha_reg}", flush=True)
+
         print(f"[vincular] insertando nuevo alumno alias={alias!r} grupo={nombre_grupo!r}", flush=True)
         try:
             await db.insert("usuarios", {
@@ -101,7 +104,7 @@ class EstudianteService:
             if hasattr(e, "response"):
                 print(f"Response body: {e.response.text}", flush=True)
             raise
-        print("[vincular] insert completado", flush=True)
+        print("[vincular] INSERT exitoso", flush=True)
         return VincularResponse(
             mensaje="Dispositivo vinculado con éxito.",
             id_grupo=grupo_id,
