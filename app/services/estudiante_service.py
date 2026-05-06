@@ -123,6 +123,8 @@ class EstudianteService:
         puntos_nuevos = 0
 
         for evento in payload.eventos:
+            if evento.id_mision == "presencia":
+                continue
             fd = evento.fecha_dispositivo
             try:
                 await db.insert("intentos_desafios", {
