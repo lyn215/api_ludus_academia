@@ -20,14 +20,19 @@ class EstudianteService:
 
     async def vincular(self, db, payload: VincularRequest) -> VincularResponse:
         ahora = datetime.now(timezone.utc)
+        print(f"[vincular] codigo={payload.codigo_vinculacion} uuid={payload.uuid_estudiante}", flush=True)
+
         codigos = await db.query("codigos_vinculacion", filters={"codigo": payload.codigo_vinculacion})
+        print(f"[vincular] codigos encontrados: {codigos}", flush=True)
 
         if not codigos:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="Código de vinculación inválido o expirado.")
 
         codigo = codigos[0]
-        expira_raw = codigo["expires_at"]
+        expira_raw = codigo.get("expires_at")
+        print(f"[vincular] expires_at raw={expira_raw!r} ahora={ahora}", flush=True)
+
         expira = (
             datetime.fromisoformat(expira_raw.replace("Z", "+00:00"))
             if isinstance(expira_raw, str) else expira_raw
@@ -40,14 +45,17 @@ class EstudianteService:
                                 detail="Código de vinculación inválido o expirado.")
 
         grupo_id = codigo["grupo_id"]
+        print(f"[vincular] grupo_id={grupo_id}", flush=True)
 
         grupos = await db.query("grupos", filters={"id": grupo_id})
+        print(f"[vincular] grupos encontrados: {grupos}", flush=True)
         if not grupos:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="Grupo no encontrado.")
         nombre_grupo = grupos[0]["nombre_grupo"]
 
         alumnos = await db.query("usuarios", filters={"id": payload.uuid_estudiante})
+        print(f"[vincular] alumno existente: {alumnos}", flush=True)
 
         if alumnos:
             alumno = alumnos[0]
@@ -72,6 +80,7 @@ class EstudianteService:
                                       filters={"tipo_usuario": "alumno", "grupo": nombre_grupo})
             alias = f"Alumno {len(existing) + 1}"
 
+        print(f"[vincular] insertando nuevo alumno alias={alias!r} grupo={nombre_grupo!r}", flush=True)
         await db.insert("usuarios", {
             "id": payload.uuid_estudiante,
             "nombre_completo": alias,
@@ -79,6 +88,7 @@ class EstudianteService:
             "grupo": nombre_grupo,
             "activo": True,
         })
+        print("[vincular] insert completado", flush=True)
         return VincularResponse(
             mensaje="Dispositivo vinculado con éxito.",
             id_grupo=grupo_id,
