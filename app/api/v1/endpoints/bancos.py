@@ -13,7 +13,6 @@ from app.db.session import get_supabase
 router = APIRouter(
     prefix="/bancos",
     tags=["📚 Bancos de preguntas"],
-    dependencies=[Depends(verify_supabase_token)],
 )
 
 
@@ -194,7 +193,8 @@ async def listar_preguntas_banco(
     return preguntas
 
 
-@router.post("/asignar", status_code=status.HTTP_201_CREATED, summary="Asignar banco a grupo")
+@router.post("/asignar", status_code=status.HTTP_201_CREATED, summary="Asignar banco a grupo",
+             dependencies=[Depends(verify_supabase_token)])
 async def asignar_banco(
     asignacion: AsignarBancoRequest,
     db=Depends(get_supabase),
@@ -211,6 +211,7 @@ async def asignar_banco(
     "/asignar/{grupo_id}/{banco_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Desasignar banco de grupo",
+    dependencies=[Depends(verify_supabase_token)],
 )
 async def desasignar_banco(
     grupo_id: str,
