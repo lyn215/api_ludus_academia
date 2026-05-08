@@ -81,11 +81,11 @@ class DocenteService:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Alumno no encontrado o sin permisos.")
         alumno = rows[0]
-        grupo_nombre = alumno.get("grupo")
-        if not grupo_nombre:
+        grupo_id = alumno.get("grupo_id")
+        if not grupo_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                                detail="Alumno no encontrado o sin permisos.")
-        grupos = await db.query("grupos", filters={"nombre_grupo": grupo_nombre})
+                                detail="Alumno sin grupo asignado.")
+        grupos = await db.query("grupos", filters={"id": grupo_id})
         if not grupos or grupos[0]["docente_id"] != supabase_uid:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Alumno no encontrado o sin permisos.")
