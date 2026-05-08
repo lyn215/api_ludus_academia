@@ -158,12 +158,12 @@ class DocenteService:
                         if isinstance(raw, str) else raw
                     )
 
-            acum: dict[str, int] = {}
-            for e in all_events:
-                nodo = e.get("nodo_id") or "otro"
-                if not e.get("es_correcta", True):
-                    acum[nodo] = acum.get(nodo, 0) + 1
-            errores_por_nivel = {nodo: float(count) for nodo, count in acum.items()}
+            nodos = set(e.get("nodo_id") for e in all_events if e.get("nodo_id"))
+            errores_por_nivel = {}
+            for nodo in nodos:
+                intentos_nivel = [e for e in all_events if e.get("nodo_id") == nodo]
+                errores_nivel = sum(1 for e in intentos_nivel if not e.get("es_correcta", True))
+                errores_por_nivel[nodo] = round(errores_nivel / len(intentos_nivel), 2)
 
             metricas.append(MetricaAlumno(
                 alias_alumno=alumno.get("nombre_completo") or uid[:8],
