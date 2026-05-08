@@ -54,8 +54,6 @@ app.include_router(api_router)
 
 @app.exception_handler(500)
 async def server_error(request: Request, exc):
-    import traceback
-    print(f"ERROR 500 [{request.method} {request.url.path}]: {traceback.format_exc()}", flush=True)
     return JSONResponse(
         status_code=500,
         content={

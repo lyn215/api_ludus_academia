@@ -20,10 +20,8 @@ class EstudianteService:
 
     async def vincular(self, db, payload: VincularRequest) -> VincularResponse:
         ahora = datetime.now(timezone.utc)
-        print(f"[vincular] codigo={payload.codigo_vinculacion} uuid={payload.uuid_estudiante}", flush=True)
 
         codigos = await db.query("codigos_vinculacion", filters={"codigo": payload.codigo_vinculacion})
-        print(f"[vincular] codigos encontrados: {codigos}", flush=True)
 
         if not codigos:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -31,7 +29,6 @@ class EstudianteService:
 
         codigo = codigos[0]
         expira_raw = codigo.get("expires_at")
-        print(f"[vincular] expires_at raw={expira_raw!r} ahora={ahora}", flush=True)
 
         expira = (
             datetime.fromisoformat(expira_raw.replace("Z", "+00:00"))
@@ -45,17 +42,14 @@ class EstudianteService:
                                 detail="Código de vinculación inválido o expirado.")
 
         grupo_id = codigo["grupo_id"]
-        print(f"[vincular] grupo_id={grupo_id}", flush=True)
 
         grupos = await db.query("grupos", filters={"id": grupo_id})
-        print(f"[vincular] grupos encontrados: {grupos}", flush=True)
         if not grupos:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="Grupo no encontrado.")
         nombre_grupo = grupos[0]["nombre_grupo"]
 
         alumnos = await db.query("usuarios", filters={"id": payload.uuid_estudiante})
-        print(f"[vincular] alumno existente: {alumnos}", flush=True)
 
         if alumnos:
             alumno = alumnos[0]
@@ -86,26 +80,15 @@ class EstudianteService:
         except Exception:
             fecha_reg = datetime.now(timezone.utc).isoformat()
 
-        print(f"[vincular] fecha_dispositivo raw: {payload.fecha_dispositivo!r}", flush=True)
-        print(f"[vincular] fecha_reg calculada: {fecha_reg}", flush=True)
-
-        print(f"[vincular] insertando nuevo alumno alias={alias!r} grupo={nombre_grupo!r}", flush=True)
-        try:
-            await db.insert("usuarios", {
-                "id":              payload.uuid_estudiante,
-                "nombre_completo": alias,
-                "tipo_usuario":    "alumno",
-                "grupo":           nombre_grupo,
-                "grupo_id":        codigo["grupo_id"],
-                "activo":          True,
-                "fecha_registro":  fecha_reg,
-            })
-        except Exception as e:
-            print(f"INSERT usuarios falló: {e}", flush=True)
-            if hasattr(e, "response"):
-                print(f"Response body: {e.response.text}", flush=True)
-            raise
-        print("[vincular] INSERT exitoso", flush=True)
+        await db.insert("usuarios", {
+            "id":              payload.uuid_estudiante,
+            "nombre_completo": alias,
+            "tipo_usuario":    "alumno",
+            "grupo":           nombre_grupo,
+            "grupo_id":        codigo["grupo_id"],
+            "activo":          True,
+            "fecha_registro":  fecha_reg,
+        })
         return VincularResponse(
             mensaje="Dispositivo vinculado con éxito.",
             id_grupo=grupo_id,
