@@ -121,6 +121,7 @@ class EstudianteService:
                     "usuario_id": payload.uuid_estudiante,
                     "nodo_id": evento.id_mision,
                     "es_correcta": evento.errores == 0,
+                    "errores": evento.errores,
                     "tiempo_respuesta": evento.segundos_jugados,
                     "puntos_obtenidos": evento.monedas_ganadas,
                     "fecha_intento": fd.isoformat() if hasattr(fd, "isoformat") else fd,
