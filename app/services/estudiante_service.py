@@ -1,16 +1,11 @@
-"""
-app/services/estudiante_service.py
-Lógica de negocio para alumnos: vinculación y sincronización.
-"""
+"""app/services/estudiante_service.py"""
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
+import httpx
+from fastapi import HTTPException, status
 
 from app.core.config import get_settings
-from app.db.models import CodigoVinculacion, Estudiante, EventoAprendizaje
 from app.schemas.schemas import (
     SincronizarRequest,
     SincronizarResponse,
@@ -23,97 +18,130 @@ settings = get_settings()
 
 class EstudianteService:
 
-    async def vincular(
-        self, db: AsyncSession, payload: VincularRequest
-    ) -> VincularResponse:
-        """
-        Vincula UUID del dispositivo con un grupo vía código LUDUXX.
-        Valida: código existe + no expiró + no fue usado.
-        """
+    async def vincular(self, db, payload: VincularRequest) -> VincularResponse:
         ahora = datetime.now(timezone.utc)
-        codigo = await db.get(CodigoVinculacion, payload.codigo_vinculacion)
 
-        if not codigo:
-            from fastapi import HTTPException, status
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Código de vinculación inválido o expirado.",
-            )
+        codigos = await db.query("codigos_vinculacion", filters={"codigo": payload.codigo_vinculacion})
 
-        expira = codigo.expira_el
+        if not codigos:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Código de vinculación inválido o expirado.")
+
+        codigo = codigos[0]
+        expira_raw = codigo.get("expires_at")
+
+        expira = (
+            datetime.fromisoformat(expira_raw.replace("Z", "+00:00"))
+            if isinstance(expira_raw, str) else expira_raw
+        )
         if expira.tzinfo is None:
             expira = expira.replace(tzinfo=timezone.utc)
 
-        if codigo.esta_usado or expira < ahora:
-            from fastapi import HTTPException, status
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Código de vinculación inválido o expirado.",
-            )
+        if expira < ahora:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Código de vinculación inválido o expirado.")
 
-        # Crear perfil si es primera vez
-        estudiante = await db.get(Estudiante, payload.uuid_estudiante)
-        if not estudiante:
-            total = await db.scalar(
-                select(func.count(Estudiante.uuid_estudiante))
-                .where(Estudiante.id_grupo == codigo.id_grupo)
-            )
-            alias = f"Alumno {(total or 0) + 1}"
-            estudiante = Estudiante(
-                uuid_estudiante=payload.uuid_estudiante,
-                id_grupo=codigo.id_grupo,
-                alias_estudiante=alias,
-            )
-            db.add(estudiante)
+        grupo_id = codigo["grupo_id"]
 
-        codigo.esta_usado = True
+        grupos = await db.query("grupos", filters={"id": grupo_id})
+        if not grupos:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Grupo no encontrado.")
+        nombre_grupo = grupos[0]["nombre_grupo"]
 
+        alumnos = await db.query("usuarios", filters={"id": payload.uuid_estudiante})
+
+        if alumnos:
+            alumno = alumnos[0]
+            if alumno.get("grupo") == nombre_grupo:
+                if payload.nombre_alumno and payload.nombre_alumno.strip():
+                    await db.patch(
+                        "usuarios",
+                        {"id": payload.uuid_estudiante},
+                        {"nombre_completo": payload.nombre_alumno.strip()[:50]},
+                    )
+                return VincularResponse(
+                    mensaje="Dispositivo vinculado con éxito.",
+                    id_grupo=grupo_id,
+                )
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                detail="Este dispositivo ya está vinculado a otro grupo.")
+
+        if payload.nombre_alumno and payload.nombre_alumno.strip():
+            alias = payload.nombre_alumno.strip()[:50]
+        else:
+            existing = await db.query("usuarios",
+                                      filters={"tipo_usuario": "alumno", "grupo": nombre_grupo})
+            alias = f"Alumno {len(existing) + 1}"
+
+        try:
+            ts = int(payload.fecha_dispositivo) / 1000
+            fecha_reg = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+        except Exception:
+            fecha_reg = datetime.now(timezone.utc).isoformat()
+
+        await db.insert("usuarios", {
+            "id":              payload.uuid_estudiante,
+            "nombre_completo": alias,
+            "tipo_usuario":    "alumno",
+            "grupo":           nombre_grupo,
+            "grupo_id":        codigo["grupo_id"],
+            "activo":          True,
+            "fecha_registro":  fecha_reg,
+        })
         return VincularResponse(
             mensaje="Dispositivo vinculado con éxito.",
-            id_grupo=codigo.id_grupo,
+            id_grupo=grupo_id,
         )
 
-    async def sincronizar(
-        self, db: AsyncSession, payload: SincronizarRequest
-    ) -> SincronizarResponse:
-        """
-        Volcado de eventos offline.
-        Idempotencia: id_evento es PK en SQLite — duplicados rechazados
-        automáticamente con IntegrityError, contados como ignorados.
-        """
-        estudiante = await db.get(Estudiante, payload.uuid_estudiante)
-        if not estudiante:
-            from fastapi import HTTPException, status
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="El dispositivo no está vinculado a ningún grupo.",
-            )
+    async def sincronizar(self, db, payload: SincronizarRequest) -> SincronizarResponse:
+        alumnos = await db.query("usuarios", filters={"id": payload.uuid_estudiante})
+        if not alumnos:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="El dispositivo no está vinculado a ningún grupo.")
+        puntos_base = alumnos[0].get("puntos_totales") or 0
+
+        grupo_id = alumnos[0].get("grupo_id")
+        if grupo_id:
+            bancos_grupo = await db.query("grupo_banco", filters={"grupo_id": grupo_id})
+            banco_id = bancos_grupo[0]["banco_id"] if bancos_grupo else None
+        else:
+            banco_id = None
 
         procesados = 0
         duplicados = 0
-        monedas_nuevas = 0
+        puntos_nuevos = 0
 
         for evento in payload.eventos:
-            nuevo = EventoAprendizaje(
-                id_evento=evento.id_evento,
-                uuid_estudiante=payload.uuid_estudiante,
-                id_mision=evento.id_mision,
-                errores=evento.errores,
-                segundos_jugados=evento.segundos_jugados,
-                monedas_ganadas=evento.monedas_ganadas,
-                fecha_dispositivo=evento.fecha_dispositivo,
-            )
-            db.add(nuevo)
+            if evento.id_mision == "presencia":
+                continue
+            fd = evento.fecha_dispositivo
             try:
-                await db.flush()
+                await db.insert("intentos_desafios", {
+                    "usuario_id": payload.uuid_estudiante,
+                    "nodo_id": evento.id_mision,
+                    "es_correcta": evento.errores == 0,
+                    "errores": evento.errores,
+                    "tiempo_respuesta": evento.segundos_jugados,
+                    "puntos_obtenidos": evento.monedas_ganadas,
+                    "fecha_intento": fd.isoformat() if hasattr(fd, "isoformat") else fd,
+                    "sincronizado": True,
+                    "banco_id": banco_id,
+                })
                 procesados += 1
-                monedas_nuevas += evento.monedas_ganadas
-            except IntegrityError:
-                await db.rollback()
-                duplicados += 1
+                puntos_nuevos += evento.monedas_ganadas
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code in (409, 422, 400):
+                    duplicados += 1
+                else:
+                    raise
 
-        if monedas_nuevas > 0:
-            estudiante.monedas_totales += monedas_nuevas
+        if puntos_nuevos > 0:
+            await db.patch(
+                "usuarios",
+                {"id": payload.uuid_estudiante},
+                {"puntos_totales": puntos_base + puntos_nuevos},
+            )
 
         return SincronizarResponse(
             estado="exito",
@@ -123,10 +151,6 @@ class EstudianteService:
 
 
 def generar_codigo_ludu() -> str:
-    """
-    Código de 6 chars con prefijo LUDU.
-    Excluye O, 0, I, 1 para evitar confusión al dictarlo.
-    """
     chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     sufijo = "".join(random.choices(chars, k=2))
     return f"LUDU{sufijo}"
