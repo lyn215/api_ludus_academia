@@ -101,6 +101,13 @@ class EstudianteService:
                                 detail="El dispositivo no está vinculado a ningún grupo.")
         puntos_base = alumnos[0].get("puntos_totales") or 0
 
+        grupo_id = alumnos[0].get("grupo_id")
+        if grupo_id:
+            bancos_grupo = await db.query("grupo_banco", filters={"grupo_id": grupo_id})
+            banco_id = bancos_grupo[0]["banco_id"] if bancos_grupo else None
+        else:
+            banco_id = None
+
         procesados = 0
         duplicados = 0
         puntos_nuevos = 0
@@ -118,6 +125,7 @@ class EstudianteService:
                     "puntos_obtenidos": evento.monedas_ganadas,
                     "fecha_intento": fd.isoformat() if hasattr(fd, "isoformat") else fd,
                     "sincronizado": True,
+                    "banco_id": banco_id,
                 })
                 procesados += 1
                 puntos_nuevos += evento.monedas_ganadas
