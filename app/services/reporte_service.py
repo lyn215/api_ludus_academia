@@ -102,7 +102,7 @@ class ReporteService:
 
         misiones = len(set(e["nodo_id"] for e in real_events if e.get("nodo_id")))
         prom_errores = (
-            round(sum(0.0 if e.get("es_correcta", True) else 1.0 for e in real_events) / len(real_events), 2)
+            round(sum(e.get("errores", 0) for e in real_events) / len(real_events), 2)
             if real_events else 0.0
         )
 
@@ -122,7 +122,7 @@ class ReporteService:
         for e in real_events:
             nivel = _id_a_nivel(e["nodo_id"])
             if nivel != "otro":
-                acum.setdefault(nivel, []).append(0.0 if e.get("es_correcta", True) else 1.0)
+                acum.setdefault(nivel, []).append(float(e.get("errores", 0)))
         errores_por_nivel = {
             nivel: round(sum(vals) / len(vals), 2)
             for nivel, vals in acum.items()

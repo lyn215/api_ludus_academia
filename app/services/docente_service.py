@@ -141,9 +141,9 @@ class DocenteService:
 
             total_intentos = len(all_events)
             misiones_completas = len(set(e.get("nodo_id") for e in all_events if e.get("nodo_id")))
-            errores_count = sum(1 for e in all_events if not e.get("es_correcta", True))
             prom_errores = (
-                round(errores_count / total_intentos, 2) if total_intentos > 0 else 0.0
+                round(sum(e.get("errores", 0) for e in all_events) / total_intentos, 2)
+                if total_intentos > 0 else 0.0
             )
 
             ultima_actividad = None
@@ -162,7 +162,7 @@ class DocenteService:
             errores_por_nivel = {}
             for nodo in nodos:
                 intentos_nivel = [e for e in all_events if e.get("nodo_id") == nodo]
-                errores_nivel = sum(1 for e in intentos_nivel if not e.get("es_correcta", True))
+                errores_nivel = sum(e.get("errores", 0) for e in intentos_nivel)
                 errores_por_nivel[nodo] = round(errores_nivel / len(intentos_nivel), 2)
 
             metricas.append(MetricaAlumno(
